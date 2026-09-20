@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zeytin — Self test</title>
+    <link rel="stylesheet" href="assets/css/app.css">
+    <style>
+        body { padding: 2rem; max-width: 60rem; margin: 0 auto; }
+        .case { padding: .375rem 0; border-bottom: 1px solid var(--border); font-size: .8125rem; }
+        .case b { font-family: ui-monospace, Consolas, monospace; font-weight: 600; }
+        #summary { font-size: 1.125rem; font-weight: 700; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+
+<h1>Zeytin — self test</h1>
+<p class="muted">
+    Menguji invarian perhitungannya, bukan tampilannya. Buka berkas ini lewat
+    server (bukan <code>file://</code>) — modul ES tidak bisa dimuat dari berkas
+    langsung. Halaman ini tidak menyentuh basis data sama sekali.
+</p>
+
+<div id="summary">…</div>
+<div id="out"></div>
+
+<script type="module">
+import { dayFigures, periodReport, groupByMonth, groupByYear, lineTotal, isSettled } from './assets/js/ledger.js';
+import { parseMoney, excelSerialToDate, eachDate, dateKey, money } from './assets/js/util.js';
+import { SUPPLIER_CASH_OPENING, CHANNELS, ALLOWED_EMAILS } from './assets/js/config.js';
+import { DICTIONARIES } from './assets/js/i18n.js';
+
+const out = document.getElementById('out');
+let pass = 0;
+let fail = 0;
+
+function check(name, actual, expected) {
+    const ok = JSON.stringify(actual) === JSON.stringify(expected);
+    ok ? pass++ : fail++;
+
+    out.insertAdjacentHTML('beforeend',
+        `<div class="case"><b class="${ok ? 'pos' : 'neg'}">${ok ? 'PASS' : 'FAIL'}</b> — ${name}` +
+        (ok ? '' : `<br><span class="muted">dapat ${JSON.stringify(actual)}, harusnya ${JSON.stringify(expected)}</span>`) +
+        `</div>`);
+}
+
+/* ---------------------------------------------------------- uang & tanggal */
+
+check('parseMoney membaca berbagai bentuk ketikan',
+    ['45.000', '45000', 'Rp 45.000', 45000, '', null].map(parseMoney),
+    [45000, 45000, 45000, 45000, 0, 0]);
+
+check('serial Excel 46235 = 1 Agustus 2026', excelSerialToDate(46235), '2026-08-01');
+check('serial Excel 46265 = 31 Agustus 2026', excelSerialToDate(46265), '2026-08-31');
+check('serial tidak masuk akal ditolak', excelSerialToDate(0), '');
+
+check('eachDate mencakup kedua ujungnya',
+    eachDate('2026-08-30', '2026-09-01'),
+    ['2026-08-30', '2026-08-31', '2026-09-01']);
+
+check('rentang terbalik jadi satu hari, bukan kosong',
+    eachDate('2026-09-05', '2026-09-01'),
+    ['2026-09-05']);
+
+check('dateKey memakai waktu lokal, bukan UTC',
+    dateKey(new Date(2026, 7, 1, 23, 30)), '2026-08-01');
+
+check('rupiah negatif diberi tanda di depan', money(-12500), '-Rp 12.500');
+
+/* --------------------------------------------- konsep kolom berkas Excel */
+
+const day = dayFigures({
+    date: '2026-08-01',
+    pettyCash: 100000,
+    cash: 4606678,
+    bni: 1325940,
+    grabFood: 0,
+    goFood: 0,
+    goPay: 0,
+}, 1366000);
+
+check('Total Sales = SUM(D:H), petty cash TIDAK ikut',
+    day.totalSales, 4606678 + 1325940);
+
+check('Grand Income = Total Sales - cash (nontunai)',
+    day.cashless, 1325940);
+
+check('Supplier Cash = 456560 + cash',
+    day.supplierCash, SUPPLIER_CASH_OPENING + 4606678);
+
+check('Remaining Supplier Cash = Supplier Cash - belanja',
+    day.remainingSupplierCash, SUPPLIER_CASH_OPENING + 4606678 - 1366000);
+
+check('sisa titipan boleh minus',
+    dayFigures({ cash: 100000 }, 900000).remainingSupplierCash,
+    SUPPLIER_CASH_OPENING + 100000 - 900000);
+
+check('total satu baris belanja = (qty*price) + tax - disc',
+    lineTotal({ qty: 3, price: 12000, tax: 1000, disc: 500 }), 36500);
+
+check('hari kosong menghasilkan nol, bukan NaN',
+    dayFigures({}, 0).totalSales, 0);
+
+/* ------------------------------------------------------------- periode */
+
+const data = {
+    days: [
+        { date: '2026-08-01', cash: 1000000, bni: 500000, pettyCash: 50000 },
+        { date: '2026-08-02', cash: 2000000, grabFood: 300000 },
+        { date: '2026-09-01', cash: 1500000, goPay: 200000 },
+    ],
+    expenses: [
+        { date: '2026-08-01', total: 400000 },
+        { date: '2026-08-01', total: 100000 },
+        { date: '2026-09-01', total: 250000 },
+    ],
+    transfers: [{ date: '2026-08-05', total: 3000000 }],
+    payroll: [{ month: '2026-08', grandTotal: 5000000 }],
+    outstanding: [
+        { date: '2026-08-10', total: 750000, status: 'Need the payment' },
+        { date: '2026-08-11', total: 999000, status: 'PT KEBAP PAID' },
+    ],
+};
+
+const aug = periodReport(data, '2026-08-01', '2026-08-31');
+
+check('penjualan dijumlahkan sepanjang rentang',
+    aug.totalSales, 1500000 + 2300000);
+
+check('petty cash tidak ikut total, tapi tetap tercatat per channel',
+    [aug.totalSales, aug.byChannel.pettyCash], [3800000, 50000]);
+
+check('belanja dikelompokkan per tanggal — tidak ada baris yang luput',
+    aug.cashExpense, 500000);
+
+check('transfer pemasok ikut dihitung sebagai pengeluaran',
+    aug.transfers, 3000000);
+
+check('gaji ikut dihitung sebagai pengeluaran',
+    aug.payroll, 5000000);
+
+check('laba bersih = penjualan - (belanja + transfer + gaji)',
+    aug.netProfit, 3800000 - (500000 + 3000000 + 5000000));
+
+check('tagihan yang sudah lunas tidak dihitung sebagai utang',
+    aug.outstanding, 750000);
+
+check('saldo global = laba + sisa titipan - tagihan belum dibayar',
+    aug.globalBalance,
+    aug.netProfit + aug.remainingSupplierCash - aug.outstanding);
+
+check('sisa titipan adalah keadaan hari terakhir, bukan jumlah antar hari',
+    aug.remainingSupplierCash,
+    SUPPLIER_CASH_OPENING + 2000000 - 0);
+
+check('hari di luar rentang tidak ikut terhitung',
+    periodReport(data, '2026-08-01', '2026-08-01').totalSales, 1500000);
+
+check('hari tanpa penjualan tetap muncul sebagai baris nol',
+    aug.rows.length, 31);
+
+check('jumlah hari yang benar-benar tercatat dihitung terpisah',
+    aug.recordedDays, 2);
+
+/* -------------------------------------------------- pengelompokan periode */
+
+const wide = periodReport(data, '2026-08-01', '2026-09-30');
+const months = groupByMonth(wide.rows);
+const years = groupByYear(wide.rows);
+
+check('pengelompokan bulanan memisahkan bulan dengan benar',
+    months.map((m) => [m.key, m.totalSales]),
+    [['2026-08', 3800000], ['2026-09', 1700000]]);
+
+check('bulanan dan harian menghasilkan total yang sama',
+    months.reduce((s, m) => s + m.totalSales, 0), wide.totalSales);
+
+check('tahunan dan harian menghasilkan total yang sama',
+    years.reduce((s, y) => s + y.totalSales, 0), wide.totalSales);
+
+check('tiap channel juga cocok antara bulanan dan keseluruhan',
+    CHANNELS.map((c) => months.reduce((s, m) => s + m[c.key], 0)),
+    CHANNELS.map((c) => wide.byChannel[c.key]));
+
+/* ------------------------------------------------------------- status */
+
+check('status lunas dikenali apa pun ejaannya',
+    ['PT KEBAP PAID', 'Aslan Paid', 'lunas', 'settled', 'Need the payment', ''].map(isSettled),
+    [true, true, true, true, false, false]);
+
+/* --------------------------------------------------------- dua bahasa */
+
+// Kunci yang belum diterjemahkan tidak kelihatan saat dipakai — ia diam-diam
+// jatuh ke bahasa Inggris. Membandingkan kedua kamus satu-satunya cara
+// menangkapnya sebelum staf melihat kalimat Inggris di tengah halaman
+// berbahasa Indonesia.
+const enKeys = Object.keys(DICTIONARIES.en).sort();
+const idKeys = Object.keys(DICTIONARIES.id).sort();
+
+check('tiap kunci Inggris punya terjemahan Indonesia',
+    enKeys.filter((k) => !(k in DICTIONARIES.id)), []);
+
+check('tidak ada kunci Indonesia yang tidak dipakai',
+    idKeys.filter((k) => !(k in DICTIONARIES.en)), []);
+
+check('tidak ada terjemahan yang kosong',
+    idKeys.filter((k) => !String(DICTIONARIES.id[k]).trim()), []);
+
+/* ------------------------------------------------------------- akses */
+
+check('daftar email yang diizinkan tidak kosong dan huruf kecil semua',
+    ALLOWED_EMAILS.length > 0 && ALLOWED_EMAILS.every((e) => e === e.toLowerCase() && e.includes('@')),
+    true);
+
+/* ------------------------------------------------------------ ringkasan */
+
+const summary = document.getElementById('summary');
+summary.textContent = fail === 0
+    ? `SEMUA LOLOS — ${pass} uji`
+    : `${fail} GAGAL, ${pass} lolos`;
+summary.className = fail === 0 ? 'pos' : 'neg';
+document.title = fail === 0 ? `PASS ${pass}` : `FAIL ${fail}`;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+rules_version = '2';
+
+/*
+ * Aturan keamanan Firestore — Zeytin.
+ *
+ * Ini SATU-SATUNYA yang benar-benar menjaga data ini.
+ *
+ * Aplikasinya situs statis: seluruh kodenya, termasuk daftar email di
+ * assets/js/config.js, terbaca siapa saja yang membuka halamannya. Daftar
+ * di sana hanya menyembunyikan tampilan. Yang menolak permintaan adalah
+ * berkas ini, dan ia berjalan di server Google, bukan di peramban.
+ *
+ * Datanya bukan data biasa: nomor rekening ±400 pemasok, nomor telepon
+ * narahubung, dan gaji tiap karyawan. Tanpa aturan ini, siapa pun yang tahu
+ * projectId — dan projectId ada di dalam kode halaman — bisa membaca
+ * semuanya.
+ *
+ * Pasang dengan:
+ *   firebase deploy --only firestore:rules
+ * atau tempel isinya di Firebase Console → Firestore → Rules.
+ *
+ * Daftar email di bawah harus sama persis dengan ALLOWED_EMAILS di
+ * assets/js/config.js. Kalau berbeda, yang berlaku tetap berkas ini, dan
+ * orangnya akan masuk ke aplikasi yang tidak memuat apa pun — membingungkan,
+ * tapi tetap aman.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function allowedEmails() {
+      return [
+        'zeytin.canggu@gmail.com',
+        'anatolia.kilic@gmail.com',
+        'elzamcuan@gmail.com'
+      ];
+    }
+
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in allowedEmails();
+    }
+
+    // Uang disimpan sebagai bilangan bulat rupiah. Menolak pecahan di sini
+    // mencegah nilai desimal masuk lewat jalur lain dan membuat laporan
+    // selisih satu dua rupiah tanpa ketahuan sebabnya.
+    function isWholeNumber(value) {
+      return value is int || (value is number && value == math.floor(value));
+    }
+
+    match /days/{date} {
+      allow read: if isStaff();
+      allow write: if isStaff()
+        && isWholeNumber(request.resource.data.get('cash', 0))
+        && isWholeNumber(request.resource.data.get('bni', 0));
+    }
+
+    match /expenses/{id}    { allow read, write: if isStaff(); }
+    match /transfers/{id}   { allow read, write: if isStaff(); }
+    match /payroll/{id}     { allow read, write: if isStaff(); }
+    match /outstanding/{id} { allow read, write: if isStaff(); }
+    match /suppliers/{id}   { allow read, write: if isStaff(); }
+
+    // Apa pun yang tidak disebut di atas ditolak. Aturan penutup ini
+    // sengaja ditulis walau sudah jadi bawaan Firestore, supaya koleksi
+    // baru tidak diam-diam terbuka kalau bawaannya suatu saat berubah.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
