@@ -29,7 +29,7 @@ import { dayFigures, periodReport, groupByMonth, groupByYear, lineTotal, isSettl
 import { parseMoney, excelSerialToDate, eachDate, dateKey, money } from './assets/js/util.js';
 import { SUPPLIER_CASH_OPENING, CHANNELS, ALLOWED_EMAILS } from './assets/js/config.js';
 import { DICTIONARIES } from './assets/js/i18n.js';
-import { toDate, stableId } from './assets/js/pages/import.js';
+import { toDate, stableId, SPECS, templateHeader } from './assets/js/pages/import.js';
 import { SCHEMAS, comboOptions, masterMatch } from './assets/js/schema.js';
 import { COLLECTIONS } from './assets/js/store.js';
 
@@ -325,6 +325,38 @@ check('tiap koleksi di skema dikenal oleh store',
 
 check('tiap koleksi punya aturan Firestore-nya sendiri',
     Object.keys(COLLECTIONS).filter((name) => !rulesText.includes(`match /${name}/`)), []);
+
+/* ---------------------------------------------------------- template */
+
+// Template yang judul kolomnya tidak dikenali pembacanya sama saja dengan
+// tidak punya template: berkasnya tetap ditolak saat diunggah. Dicocokkan
+// dengan cara yang sama seperti findHeaderRows, yaitu setelah dinormalkan.
+const normalize = (value) => String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+check('header template memuat semua kolom wajib tiap sheet',
+    SPECS.flatMap((spec) => {
+        const header = templateHeader(spec).map(normalize);
+
+        return spec.required.filter((label) => !header.includes(label))
+            .map((label) => `${spec.sheet}: ${label}`);
+    }), []);
+
+check('header template memuat tiap kolom yang dipetakan',
+    SPECS.flatMap((spec) => {
+        const header = templateHeader(spec).map(normalize);
+
+        return Object.entries(spec.map)
+            .filter(([, aliases]) => !aliases.some((alias) => header.includes(alias)))
+            .map(([field]) => `${spec.sheet}.${field}`);
+    }), []);
+
+check('template tidak punya judul kolom kembar',
+    SPECS.flatMap((spec) => {
+        const header = templateHeader(spec).map(normalize);
+
+        return header.filter((label, i) => header.indexOf(label) !== i)
+            .map((label) => `${spec.sheet}: ${label}`);
+    }), []);
 
 /* ------------------------------------------------------------ ringkasan */
 

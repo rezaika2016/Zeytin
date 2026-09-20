@@ -33,7 +33,7 @@ const SHEETJS = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm';
  * baris header. Sengaja dipilih yang paling khas, bukan semuanya, supaya
  * penambahan kolom oleh klien tidak langsung membuat impor gagal.
  */
-const SPECS = [
+export const SPECS = [
     {
         sheet: 'Income',
         target: 'days',
@@ -143,6 +143,64 @@ const SPECS = [
     },
 ];
 
+/* ----------------------------------------------------------- template */
+
+/**
+ * Judul kolom satu sheet, diturunkan dari SPECS yang sama dipakai pembacanya.
+ *
+ * Diturunkan, bukan diketik ulang: template yang judulnya beda sedikit saja
+ * dari yang dicari pembaca akan ditolak saat diunggah — persis masalah yang
+ * hendak dihilangkan template ini.
+ *
+ * Alias pertama yang dipakai, karena itu ejaan yang ada di berkas klien.
+ * Kolom di `required` ikut ditulis walau tidak dipetakan: Income butuh
+ * "total sales" dan Expense butuh "total" untuk mengenali baris headernya,
+ * padahal angkanya dihitung ulang oleh aplikasi, bukan dibaca.
+ */
+export function templateHeader(spec) {
+    const titles = Object.values(spec.map).map((aliases) => aliases[0]);
+    const missing = spec.required.filter((label) => !titles.includes(label));
+
+    return [...titles, ...missing].map(titleCase);
+}
+
+function titleCase(label) {
+    return String(label).replace(/\b[a-z]/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Berkas contoh berisi keenam sheet dengan nama dan judul kolom yang benar.
+ *
+ * Sengaja tanpa baris contoh: baris yang lupa dihapus akan ikut terimpor
+ * sebagai data sungguhan. Petunjuk pengisiannya ditaruh di sheet terpisah
+ * yang namanya tidak dikenali pembaca, jadi ia diabaikan begitu saja.
+ */
+async function downloadTemplate() {
+    const XLSX = await import(/* @vite-ignore */ SHEETJS);
+    const book = XLSX.utils.book_new();
+
+    for (const spec of SPECS) {
+        XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([templateHeader(spec)]), spec.sheet);
+    }
+
+    const guide = [
+        [t('tpl.guideTitle')],
+        [],
+        [t('tpl.guideSheet')],
+        [t('tpl.guideHeader')],
+        [t('tpl.guideDate')],
+        [t('tpl.guideMoney')],
+        [t('tpl.guideMonth')],
+        [t('tpl.guideExtra')],
+        [],
+        [t('tpl.guideSheetList')],
+        ...SPECS.map((spec) => [spec.sheet, templateHeader(spec).join(' · ')]),
+    ];
+
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(guide), t('tpl.guideTab'));
+    XLSX.writeFile(book, `zeytin-template-${today()}.xlsx`);
+}
+
 /* ------------------------------------------------------------ tampilan */
 
 export function renderImport(host, onDone) {
@@ -189,10 +247,31 @@ export function renderImport(host, onDone) {
         },
     });
 
+    const templateBtn = el('button', {
+        class: 'btn btn--ghost',
+        type: 'button',
+        onclick: async () => {
+            templateBtn.disabled = true;
+
+            try {
+                await downloadTemplate();
+            } catch (error) {
+                toast(error.message, 'err');
+            } finally {
+                templateBtn.disabled = false;
+            }
+        },
+    }, t('tpl.download'));
+
     host.replaceChildren(el('div', { class: 'card' }, [
-        el('div', { class: 'card__head' }, [el('h2', { text: t('tab.import') })]),
+        el('div', { class: 'card__head' }, [
+            el('h2', { text: t('tab.import') }),
+            el('span', { class: 'spacer' }),
+            templateBtn,
+        ]),
         el('div', { class: 'card__body' }, [
             el('p', { class: 'notice', text: t('import.intro') }),
+            el('p', { class: 'muted', style: 'font-size:.8125rem;margin-top:.5rem', text: t('tpl.hint') }),
             el('div', { class: 'form-grid', style: 'margin-top:1rem' }, [
                 el('label', { class: 'field' }, [
                     el('span', { text: t('import.pick') }),
