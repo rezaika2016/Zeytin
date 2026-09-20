@@ -90,22 +90,27 @@ tunai sesungguhnya **42.872.068**.
 ### 2. Transfer ke pemasok tidak ikut dihitung sama sekali
 
 Sheet Supplier Transfer Payment, kolom H (Total Expense), berjumlah
-**157.986.252**. Angka sebesar itu tidak masuk ke Grand Expense maupun ke
-Profit / Gross.
+**78.993.126** untuk 67 baris. Angka sebesar itu tidak masuk ke Grand
+Expense maupun ke Profit / Gross.
+
+> Koreksi. Catatan ini semula menulis **157.986.252**, persis dua kali
+> lipat. Sebabnya baris `TOTAL` di dalam sheet itu (baris 86, kolom H)
+> ikut terjumlah bersama baris datanya. Angka yang benar 78.993.126 —
+> sudah dicocokkan dengan sel `TOTAL`-nya sendiri.
 
 Kalau ketiga pengeluaran dijumlahkan sebagaimana mestinya:
 
-| | Dilaporkan sekarang | Kalau dihitung penuh |
+| | Dilaporkan workbook | Kalau dihitung penuh |
 |---|---|---|
-| Grand Income | 272.151.757 | 272.151.757 |
+| Penjualan | 272.151.757 | 280.983.465 |
 | Belanja tunai | 500.000 | 42.872.068 |
-| Transfer pemasok | — | 157.986.252 |
-| Payroll | 31.386.945 | 31.386.945 |
-| **Profit / Gross** | **240.264.812** | **39.906.492** |
+| Transfer pemasok | — | 78.993.126 |
+| Payroll | 31.386.945 | 31.386.944 |
+| **Profit / Gross** | **240.264.812** | **127.731.327** |
 
-Selisihnya sekitar **200 juta**. Mungkin saja transfer pemasok memang
-sengaja tidak dihitung karena dibayar dari pos lain — tapi itu harus
-dinyatakan, bukan tersirat.
+Selisihnya **112,5 juta**. Mungkin saja transfer pemasok memang sengaja
+tidak dihitung karena dibayar dari pos lain — tapi itu harus dinyatakan,
+bukan tersirat.
 
 ### 3. Rentang harian dipilih tangan, dan ada baris yang terlewat
 
@@ -121,15 +126,46 @@ rentang.
 Di aplikasi nanti hal ini hilang dengan sendirinya: pengeluaran
 dikelompokkan berdasarkan tanggalnya, bukan berdasarkan nomor baris.
 
+### 4. Penjualan yang dilaporkan melewatkan tanggal 31
+
+Penyakit yang sama dengan nomor 3, tapi kali ini mengenai angka paling
+atas — yang dibaca bos lebih dulu daripada yang lain.
+
+`Income!Q8` berisi **272.151.757**. Jumlah Total Sales ketiga puluh satu
+harinya **280.983.465**. Selisihnya **8.831.708**, dan itu persis Total
+Sales tanggal **31 Agustus**: satu hari penuh tidak masuk rentang yang
+diketik tangan.
+
+Hari terakhir adalah hari yang paling mungkin terlewat, karena barisnya
+ditambahkan setelah rumusnya ditulis. Di aplikasi ini penjumlahan mengikuti
+tanggal, jadi hari yang baru dimasukkan ikut dengan sendirinya.
+
+### 5. Tanggal diketik sebagai teks, dan satu di antaranya salah tahun
+
+Di sheet Expense, tanggal enam belas hari pertama berupa serial Excel
+(46235, 46236, …) — angka yang dikenali Excel sebagai tanggal. Mulai baris
+138 bentuknya berubah jadi teks biasa: `"17/8/2026"`, `"31/08/2026"`.
+
+Satu di antaranya tertulis **`"18/8/2028"`** — tahun 2028, bukan 2026.
+Excel tidak menganggapnya tanggal sama sekali, jadi tidak ada peringatan
+apa pun, dan jumlah barisnya tetap sama. Belanja 464.000 hari itu akan
+muncul di laporan tahun 2028 kalau dibiarkan.
+
+Perbaikannya ada di sel itu, bukan di aplikasi: aplikasi tidak boleh
+diam-diam membetulkan angka yang diketik manusia. Yang bisa dilakukan
+aplikasi adalah membuatnya kelihatan — karena itu tabel hasil impor
+menampilkan rentang tanggal yang terbaca tiap sheet.
+
 ### Catatan tambahan
 
 - **Petty cash (kolom C) tidak ikut Total Sales.** `SUM(D:H)` dimulai dari
   D, melewati C. Disengaja atau tidak, perlu ditanyakan.
 - **456.560 diketik langsung di tiap baris** Supplier Cash. Angka ini
   kelihatannya saldo awal titipan, tapi tidak ada keterangannya di mana pun.
-- **82.044.731 dari transfer pemasok tidak punya status pembayaran** —
-  lebih dari separuhnya. Artinya untuk sebagian besar transaksi tidak
-  tercatat siapa yang menalangi.
+- **3.051.605 dari transfer pemasok tidak punya status pembayaran** — 5 baris
+  dari 67. Sisanya: 75.562.122 `PT KEBAP PAID`, 379.399 `ASLAN PAID`.
+  (Catatan ini semula menulis 82.044.731 dan "lebih dari separuhnya";
+  itu keliru, ikut terbawa salah jumlah yang sama dengan temuan nomor 2.)
 
 ## Saldo di Dashboard
 

@@ -215,12 +215,14 @@ function report(results) {
                 el('tr', {}, [
                     el('th', {}, 'Sheet'),
                     el('th', { class: 'num' }, t('import.rows')),
+                    el('th', {}, t('import.range')),
                     el('th', {}, t('f.status')),
                 ]),
             ]),
             el('tbody', {}, results.map((r) => el('tr', {}, [
                 el('td', {}, r.sheet),
                 el('td', { class: 'num' }, String(r.imported ?? 0)),
+                el('td', { class: 'muted' }, r.range || '—'),
                 el('td', { class: r.error ? 'warn' : 'pos' }, r.error || 'OK'),
             ]))),
         ]),
@@ -263,7 +265,7 @@ export async function importWorkbook(file, ctx = {}) {
 
         try {
             await store.putMany(spec.target, records);
-            results.push({ sheet: spec.sheet, imported: records.length });
+            results.push({ sheet: spec.sheet, imported: records.length, range: dateRange(records) });
         } catch (error) {
             results.push({ sheet: spec.sheet, imported: 0, error: error.message });
         }
@@ -406,8 +408,20 @@ function toNumber(value) {
     return Number.isFinite(n) ? Math.round(n) : 0;
 }
 
-/** Tanggal Excel bisa berupa serial angka atau teks; keduanya diterima. */
-function toDate(value) {
+/**
+ * Tanggal Excel bisa berupa serial angka atau teks.
+ *
+ * Teksnya ditulis tangan oleh staf dengan urutan hari dulu — "31/08/2026".
+ * `Date.parse` menolak bentuk itu; ia mengharap bulan dulu. Kalau ditolak,
+ * baris itu dianggap tak bertanggal lalu mewarisi tanggal baris sebelumnya,
+ * sehingga belanja dua minggu terakhir menumpuk di satu hari. Totalnya tetap
+ * benar, yang rusak rinciannya — galat semacam itu yang paling lama tidak
+ * ketahuan.
+ *
+ * Urutan hari-dulu dipakai tanpa menebak: itu yang ada di berkas klien dan
+ * lazim di Indonesia. "05/08/2026" berarti 5 Agustus, bukan 8 Mei.
+ */
+export function toDate(value) {
     if (value === null || value === undefined || value === '') {
         return '';
     }
@@ -422,6 +436,22 @@ function toDate(value) {
         return text;
     }
 
+    const dmy = text.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+
+    if (dmy) {
+        const day = Number(dmy[1]);
+        const month = Number(dmy[2]);
+        const year = Number(dmy[3]);
+
+        // Tanggal mustahil ditolak, bukan digeser jadi bulan berikutnya
+        // seperti yang dilakukan konstruktor Date.
+        if (month < 1 || month > 12 || day < 1 || day > 31) {
+            return '';
+        }
+
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
     const parsed = Date.parse(text);
 
     if (Number.isNaN(parsed)) {
@@ -431,4 +461,24 @@ function toDate(value) {
     const d = new Date(parsed);
 
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Rentang tanggal yang benar-benar terbaca dari sheet, ditampilkan apa
+ * adanya di tabel hasil.
+ *
+ * Gunanya bukan hiasan: salah ketik tahun di satu sel — di berkas Agustus
+ * 2026 ada satu baris tertulis "18/8/2028" — tidak mengubah jumlah baris
+ * dan tidak memunculkan galat apa pun. Yang berubah cuma ujung rentangnya.
+ * Ditampilkan begini, kekeliruan itu kelihatan sebelum datanya dipakai;
+ * kalau disembunyikan, baru ketahuan saat laporan tahunan terlihat aneh.
+ */
+function dateRange(records) {
+    const keys = records.map((row) => row.date || row.month).filter(Boolean).sort();
+
+    if (!keys.length) {
+        return '';
+    }
+
+    return keys[0] === keys[keys.length - 1] ? keys[0] : `${keys[0]} … ${keys[keys.length - 1]}`;
 }

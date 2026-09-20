@@ -111,19 +111,29 @@ Diambil dari rumus di dalam selnya, bukan ditebak dari angkanya:
 mulai dari kolom D dan melewati C. Perilaku itu dipertahankan, dan ditandai
 `excl.` di dasbor supaya tidak dikira hilang karena salah hitung.
 
-### Tiga hal yang diperbaiki, atas persetujuan klien
+### Lima hal yang ditemukan di berkas aslinya
 
-Rinciannya di [`docs/DISKUSI.md`](docs/DISKUSI.md).
+Rinciannya di [`docs/DISKUSI.md`](docs/DISKUSI.md). Tiga yang pertama sudah
+disetujui klien untuk diperbaiki; dua terakhir ditemukan belakangan, saat
+berkas Agustus benar-benar diimpor.
 
 1. **Grand Expense** di berkas aslinya menunjuk satu baris belanja
    (`Expense!J80` = 500.000), bukan totalnya. Di sini dijumlahkan penuh —
    belanja tunai sebenarnya 42.872.068.
-2. **Transfer ke pemasok** (157.986.252) tidak pernah ikut hitungan laba.
+2. **Transfer ke pemasok** (78.993.126) tidak pernah ikut hitungan laba.
    Di sini ikut sebagai pengeluaran. Laba turun dari 240.264.812 menjadi
-   39.906.492.
+   127.731.327.
 3. **Rentang belanja harian** di berkas aslinya diketik tangan
    (`Expense!J5:J8`, `J9:J12`, …) sehingga 217.490 terlewat. Di sini
    pengelompokannya berdasarkan tanggal, jadi tidak ada yang bisa luput.
+4. **Penjualan yang dilaporkan melewatkan tanggal 31.** `Income!Q8` berisi
+   272.151.757; jumlah ketiga puluh satu harinya 280.983.465. Selisih
+   8.831.708 itu persis penjualan 31 Agustus — hari terakhir jatuh di luar
+   rentang yang diketik tangan.
+5. **Satu tanggal salah ketik tahun:** `"18/8/2028"` di sheet Expense.
+   Aplikasi tidak membetulkannya diam-diam — tabel hasil impor menampilkan
+   rentang tanggal tiap sheet, jadi tahun yang melenceng langsung kelihatan.
+   Perbaikannya di sel itu sendiri.
 
 ### Saldo global
 
@@ -147,6 +157,12 @@ tiap sheet mulai di baris berlainan.
 Ia mencari baris header berdasarkan nama kolom, mewarisi tanggal yang kosong,
 dan **melaporkan sheet yang bentuknya berubah** alih-alih menebak. Galat diam
 di pengimpor adalah cara tercepat merusak laporan tanpa ada yang sadar.
+
+Tanggalnya dua bentuk sekaligus: serial Excel di awal bulan, lalu teks
+ketikan tangan ("31/08/2026") di sisanya. Keduanya dibaca hari-dulu.
+Tabel hasil impor menampilkan **rentang tanggal yang terbaca tiap sheet**,
+supaya salah ketik tahun — yang tidak mengubah jumlah baris dan tidak
+memunculkan galat — kelihatan sebelum datanya dipakai.
 
 Bulan untuk sheet Payroll ditanyakan, tidak ditebak — judulnya di berkas asli
 berupa kalimat bebas yang tidak dijamin bentuknya.
@@ -176,7 +192,7 @@ docs/DISKUSI.md               catatan diskusi & temuan atas berkas klien
 
 Buka **`/tests.html`** lewat server.
 
-**36 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
+**41 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
 
 Yang diuji bukan "halaman terbuka", tapi hal-hal yang membuat laporan salah
 kalau rusak:
@@ -191,6 +207,8 @@ kalau rusak:
 - hari tanpa penjualan tetap muncul sebagai baris nol, bukan hilang
 - rentang tanggal terbalik tidak menghasilkan tabel kosong tanpa penjelasan
 - serial tanggal Excel 46235 dibaca sebagai 1 Agustus 2026
+- tanggal ketikan tangan "31/08/2026" dibaca hari-dulu, bukan ditolak
+- tanggal mustahil ("31/13/2026") ditolak, bukan digeser ke bulan berikutnya
 - tiap kunci bahasa Inggris punya terjemahan Indonesianya
 
 ## Yang belum dikerjakan

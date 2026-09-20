@@ -29,6 +29,7 @@ import { dayFigures, periodReport, groupByMonth, groupByYear, lineTotal, isSettl
 import { parseMoney, excelSerialToDate, eachDate, dateKey, money } from './assets/js/util.js';
 import { SUPPLIER_CASH_OPENING, CHANNELS, ALLOWED_EMAILS } from './assets/js/config.js';
 import { DICTIONARIES } from './assets/js/i18n.js';
+import { toDate } from './assets/js/pages/import.js';
 
 const out = document.getElementById('out');
 let pass = 0;
@@ -205,6 +206,27 @@ check('tidak ada kunci Indonesia yang tidak dipakai',
 
 check('tidak ada terjemahan yang kosong',
     idKeys.filter((k) => !String(DICTIONARIES.id[k]).trim()), []);
+
+/* ------------------------------------------- tanggal ketikan tangan */
+
+// Di berkas klien, tanggal enam belas hari pertama berupa serial Excel,
+// sisanya diketik tangan sebagai teks "31/08/2026". Date.parse menolak
+// bentuk itu, dan baris yang tanggalnya ditolak mewarisi tanggal baris
+// sebelumnya — jadi belanja setengah bulan menumpuk di satu hari tanpa
+// galat apa pun. Uji ini ada supaya bentuk itu tidak pernah lolos lagi.
+
+check('tanggal ketikan tangan dibaca hari-dulu',
+    ['31/08/2026', '5/8/2026', '17/8/2026', '1.9.2026'].map(toDate),
+    ['2026-08-31', '2026-08-05', '2026-08-17', '2026-09-01']);
+
+check('serial Excel tetap terbaca seperti semula', toDate(46235), '2026-08-01');
+
+check('tanggal ISO dibiarkan apa adanya', toDate('2026-08-09'), '2026-08-09');
+
+check('bulan mustahil ditolak, bukan digeser ke bulan berikutnya',
+    ['31/13/2026', '0/8/2026', '32/8/2026'].map(toDate), ['', '', '']);
+
+check('sel kosong tidak jadi tanggal hari ini', [toDate(''), toDate(null)], ['', '']);
 
 /* ------------------------------------------------------------- akses */
 

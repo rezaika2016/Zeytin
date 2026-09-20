@@ -100,6 +100,7 @@ const DICT = {
         'import.sheetMissing': 'Sheet not found',
         'import.headerMissing': 'Header row not found — the sheet layout has changed',
         'import.rows': 'rows',
+        'import.range': 'Dates found',
         'import.willReplace': 'Rows with the same date and item replace the existing ones.',
 
         // Reports
@@ -224,6 +225,7 @@ const DICT = {
         'import.sheetMissing': 'Sheet tidak ditemukan',
         'import.headerMissing': 'Baris header tidak ketemu — bentuk sheet-nya berubah',
         'import.rows': 'baris',
+        'import.range': 'Tanggal yang terbaca',
         'import.willReplace': 'Baris dengan tanggal dan barang yang sama akan menggantikan yang lama.',
 
         'rep.title': 'Laporan',
