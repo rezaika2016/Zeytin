@@ -32,7 +32,8 @@ service cloud.firestore {
       return [
         'zeytin.canggu@gmail.com',
         'anatolia.kilic@gmail.com',
-        'elzamcuan@gmail.com'
+        'elzamcuan@gmail.com',
+        'editor.mpi.semangat@gmail.com'
       ];
     }
 

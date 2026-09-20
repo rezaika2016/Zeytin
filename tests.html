@@ -268,6 +268,18 @@ check('daftar email yang diizinkan tidak kosong dan huruf kecil semua',
     ALLOWED_EMAILS.length > 0 && ALLOWED_EMAILS.every((e) => e === e.toLowerCase() && e.includes('@')),
     true);
 
+// Daftarnya ada di dua berkas, dan keduanya harus sama persis. Kalau satu
+// alamat ditambahkan di config.js saja, orangnya bisa masuk lalu melihat
+// aplikasi yang tidak memuat apa pun — Firestore menolaknya di sisi server,
+// dan pesannya tidak menjelaskan sebabnya. Kebalikannya juga buruk: alamat
+// yang cuma ada di firestore.rules tidak akan pernah bisa menekan tombol
+// masuk. Satu-satunya cara menangkapnya adalah membandingkan keduanya.
+const rulesText = await fetch('./firestore.rules').then((r) => r.text());
+const emailsInRules = [...rulesText.matchAll(/'([^'\s]+@[^'\s]+)'/g)].map((m) => m[1]).sort();
+
+check('daftar email di firestore.rules sama persis dengan config.js',
+    emailsInRules, [...ALLOWED_EMAILS].sort());
+
 /* ------------------------------------------------------------ ringkasan */
 
 const summary = document.getElementById('summary');

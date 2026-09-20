@@ -77,7 +77,8 @@ Dua berkas pendukungnya:
 5. **Firestore → Rules**: tempel isi [`firestore.rules`](firestore.rules)
 6. Salin konfigurasi web ke [`assets/js/config.js`](assets/js/config.js)
 
-Daftar email di `config.js` dan di `firestore.rules` **harus sama persis**.
+Daftar email di `config.js` dan di `firestore.rules` **harus sama persis** —
+dan itu dijaga oleh salah satu uji di `tests.html`, bukan oleh ingatan.
 Yang di `config.js` cuma menyembunyikan tampilan; yang benar-benar menolak
 adalah `firestore.rules`, dan ia berjalan di server Google.
 
@@ -225,7 +226,7 @@ docs/DISKUSI.md               catatan diskusi & temuan atas berkas klien
 
 Buka **`/tests.html`** lewat server.
 
-**47 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
+**48 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
 
 Yang diuji bukan "halaman terbuka", tapi hal-hal yang membuat laporan salah
 kalau rusak:
@@ -246,6 +247,7 @@ kalau rusak:
   berkas yang sama dua kali tidak menggandakan apa pun
 - dua baris belanja yang benar-benar kembar dalam satu hari tetap dua baris
 - tiap kunci bahasa Inggris punya terjemahan Indonesianya
+- daftar email di `firestore.rules` sama persis dengan yang di `config.js`
 
 ## Yang belum dikerjakan
 

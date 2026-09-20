@@ -33,6 +33,7 @@ export const ALLOWED_EMAILS = [
     'zeytin.canggu@gmail.com',
     'anatolia.kilic@gmail.com',
     'elzamcuan@gmail.com',
+    'editor.mpi.semangat@gmail.com',
 ];
 
 export const business = {
