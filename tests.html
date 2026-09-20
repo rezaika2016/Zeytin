@@ -29,7 +29,7 @@ import { dayFigures, periodReport, groupByMonth, groupByYear, lineTotal, isSettl
 import { parseMoney, excelSerialToDate, eachDate, dateKey, money } from './assets/js/util.js';
 import { SUPPLIER_CASH_OPENING, CHANNELS, ALLOWED_EMAILS } from './assets/js/config.js';
 import { DICTIONARIES } from './assets/js/i18n.js';
-import { toDate } from './assets/js/pages/import.js';
+import { toDate, stableId } from './assets/js/pages/import.js';
 
 const out = document.getElementById('out');
 let pass = 0;
@@ -227,6 +227,40 @@ check('bulan mustahil ditolak, bukan digeser ke bulan berikutnya',
     ['31/13/2026', '0/8/2026', '32/8/2026'].map(toDate), ['', '', '']);
 
 check('sel kosong tidak jadi tanggal hari ini', [toDate(''), toDate(null)], ['', '']);
+
+/* ------------------------------------------- nomor identitas impor */
+
+// Sebelum ini tiap baris impor diberi nomor acak, jadi mengimpor berkas yang
+// sama dua kali menggandakan seluruh isinya tanpa tanda apa pun. Uji berikut
+// mengunci perilaku yang menggantikannya.
+
+const KEY = ['date', 'vendor', 'item', 'qty', 'price'];
+const ROW = { date: '2026-08-01', vendor: 'Anadolu Meat', item: 'Lamb shank', qty: 2, price: 50000 };
+
+check('baris yang isinya sama selalu dapat nomor yang sama',
+    stableId(KEY, ROW, {}), stableId(KEY, ROW, {}));
+
+check('satu isi berubah, nomornya ikut berubah',
+    stableId(KEY, ROW, {}) === stableId(KEY, { ...ROW, price: 60000 }, {}), false);
+
+check('baris kembar dalam satu impor tetap jadi dua baris', (() => {
+    const seen = {};
+
+    return stableId(KEY, ROW, seen) === stableId(KEY, ROW, seen);
+})(), false);
+
+check('urutan baris kembar sama tiap kali diimpor', (() => {
+    const first = {};
+    const second = {};
+
+    return [stableId(KEY, ROW, first), stableId(KEY, ROW, first)].join()
+        === [stableId(KEY, ROW, second), stableId(KEY, ROW, second)].join();
+})(), true);
+
+check('baris tanpa isi sama sekali tidak dapat nomor', stableId(KEY, {}, {}), '');
+
+check('nomornya aman dipakai sebagai id Firestore',
+    /^[a-z0-9-]+$/.test(stableId(KEY, { ...ROW, item: 'Ayam / Sapi (1kg)' }, {})), true);
 
 /* ------------------------------------------------------------- akses */
 

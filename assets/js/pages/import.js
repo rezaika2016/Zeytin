@@ -21,7 +21,7 @@
 
 import { store } from '../store.js';
 import { t } from '../i18n.js';
-import { el, excelSerialToDate, toast, uid, today } from '../util.js';
+import { el, excelSerialToDate, toast, today } from '../util.js';
 import { lineTotal } from '../ledger.js';
 
 const SHEETJS = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm';
@@ -53,6 +53,7 @@ const SPECS = [
     {
         sheet: 'Expense',
         target: 'expenses',
+        keyFrom: ['date', 'vendor', 'item', 'qty', 'price'],
         required: ['date', 'items', 'total'],
         map: {
             date: ['date'],
@@ -70,6 +71,7 @@ const SPECS = [
     {
         sheet: 'Supplier Transfer Payment',
         target: 'transfers',
+        keyFrom: ['date', 'vendor', 'item', 'qty', 'price', 'total'],
         required: ['date', 'items', 'total expense'],
         map: {
             date: ['date'],
@@ -88,6 +90,7 @@ const SPECS = [
     {
         sheet: 'Outstanding INV',
         target: 'outstanding',
+        keyFrom: ['date', 'vendor', 'item', 'qty', 'price'],
         required: ['vendor', 'items', 'total'],
         map: {
             date: ['date order'],
@@ -107,6 +110,7 @@ const SPECS = [
     {
         sheet: 'Supplier Database',
         target: 'suppliers',
+        keyFrom: ['name', 'account'],
         required: ["supplier's name", 'contact person'],
         map: {
             name: ["supplier's name", 'supplier name'],
@@ -123,6 +127,7 @@ const SPECS = [
     {
         sheet: 'Payroll',
         target: 'payroll',
+        keyFrom: ['month', 'name'],
         required: ['name', 'basic sallary'],
         map: {
             name: ['name'],
@@ -223,7 +228,8 @@ function report(results) {
                 el('td', {}, r.sheet),
                 el('td', { class: 'num' }, String(r.imported ?? 0)),
                 el('td', { class: 'muted' }, r.range || '—'),
-                el('td', { class: r.error ? 'warn' : 'pos' }, r.error || 'OK'),
+                el('td', { class: r.error ? 'warn' : 'pos' },
+                    r.error || (r.replaced ? `OK — ${r.replaced} ${t('import.replaced')}` : 'OK')),
             ]))),
         ]),
     ]);
@@ -252,10 +258,14 @@ export async function importWorkbook(file, ctx = {}) {
             continue;
         }
 
+        // Penghitung kemunculan, dipakai bersama seluruh blok di sheet ini:
+        // dua baris belanja yang isinya benar-benar sama dalam satu hari
+        // tetap dua baris, tapi urutannya sama tiap kali diimpor.
+        const seen = {};
         const records = [];
 
         for (const block of blocks) {
-            records.push(...readBlock(grid, block, spec, ctx));
+            records.push(...readBlock(grid, block, spec, ctx, seen));
         }
 
         if (!records.length) {
@@ -264,8 +274,11 @@ export async function importWorkbook(file, ctx = {}) {
         }
 
         try {
+            const replaced = await pruneReplaced(spec, records);
+
             await store.putMany(spec.target, records);
-            results.push({ sheet: spec.sheet, imported: records.length, range: dateRange(records) });
+            results.push({ sheet: spec.sheet, imported: records.length, range: dateRange(records), replaced });
+
         } catch (error) {
             results.push({ sheet: spec.sheet, imported: 0, error: error.message });
         }
@@ -299,7 +312,7 @@ function findHeaderRows(grid, required) {
     return blocks;
 }
 
-function readBlock(grid, headerRow, spec, ctx) {
+function readBlock(grid, headerRow, spec, ctx, seen) {
     const header = (grid[headerRow] || []).map(norm);
     const columns = {};
 
@@ -384,7 +397,11 @@ function readBlock(grid, headerRow, spec, ctx) {
             continue;
         }
 
-        built.id = spec.idFrom ? built[spec.idFrom] : uid();
+        built.id = spec.idFrom ? built[spec.idFrom] : stableId(spec.keyFrom, built, seen);
+
+        // Menandai asalnya, supaya impor berikutnya tahu baris mana yang
+        // boleh ia ganti dan baris mana yang diketik orang.
+        built.source = 'import';
 
         if (built.id) {
             records.push(built);
@@ -481,4 +498,71 @@ function dateRange(records) {
     }
 
     return keys[0] === keys[keys.length - 1] ? keys[0] : `${keys[0]} … ${keys[keys.length - 1]}`;
+}
+
+/**
+ * Nomor identitas yang selalu sama untuk baris yang isinya sama.
+ *
+ * Sebelumnya tiap baris impor diberi nomor acak, jadi mengimpor berkas yang
+ * sama dua kali menggandakan seluruh isinya — belanja sebulan terhitung dua
+ * kali, dan tidak ada tanda apa pun bahwa itu terjadi. Dengan nomor yang
+ * diturunkan dari isinya, impor kedua menimpa baris yang sama, bukan
+ * menambah baris baru.
+ *
+ * Nomor urut di belakang menjaga baris kembar yang memang sah: dua kali beli
+ * Aqua Galon di hari dan harga yang sama tetap dua baris, karena urutannya
+ * dihitung, bukan ditebak dari isinya.
+ */
+export function stableId(fields, row, seen = {}) {
+    const key = (fields || []).map((field) => String(row[field] ?? '').trim().toLowerCase()).join('|');
+
+    if (!key.replace(/\|/g, '')) {
+        return '';
+    }
+
+    const occurrence = (seen[key] = (seen[key] || 0) + 1);
+
+    // Bagian yang terbaca manusia memudahkan menelusuri satu baris di
+    // Firestore; ekor hash-nya yang menjamin tidak ada dua kunci berbeda
+    // jatuh ke nomor yang sama setelah dipangkas.
+    const readable = key.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+
+    let hash = 2166136261;
+
+    for (let i = 0; i < key.length; i++) {
+        hash ^= key.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+
+    const tail = (hash >>> 0).toString(36);
+
+    return `${readable}-${tail}${occurrence > 1 ? `-${occurrence}` : ''}`;
+}
+
+/**
+ * Membuang baris hasil impor lama yang sudah tidak ada di berkas ini.
+ *
+ * Tanpa ini, membetulkan satu sel di Excel lalu mengimpor ulang akan
+ * meninggalkan baris versi lamanya — isinya berubah, jadi nomornya berubah,
+ * jadi baris lamanya tidak tertimpa. Dua-duanya ikut terhitung.
+ *
+ * Yang dibuang hanya baris bertanda `source: 'import'` dan hanya di dalam
+ * rentang tanggal berkas yang sedang diimpor. Apa pun yang diketik lewat
+ * halaman Handler tidak pernah disentuh impor — berkas Excel berwenang atas
+ * baris yang ia bawa sendiri, bukan atas seluruh isi basis data.
+ */
+async function pruneReplaced(spec, records) {
+    const keys = records.map((row) => row.date || row.month).filter(Boolean).sort();
+    const range = keys.length ? { from: keys[0], to: keys[keys.length - 1] } : {};
+
+    const existing = await store.list(spec.target, range);
+    const incoming = new Set(records.map((row) => row.id));
+
+    const stale = existing.filter((row) => row.source === 'import' && !incoming.has(row.id));
+
+    for (const row of stale) {
+        await store.remove(spec.target, row.id);
+    }
+
+    return stale.length;
 }

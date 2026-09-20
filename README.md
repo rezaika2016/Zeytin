@@ -167,6 +167,39 @@ memunculkan galat — kelihatan sebelum datanya dipakai.
 Bulan untuk sheet Payroll ditanyakan, tidak ditebak — judulnya di berkas asli
 berupa kalimat bebas yang tidak dijamin bentuknya.
 
+### Mengimpor ulang berkas yang sama itu aman
+
+Tiap baris impor diberi nomor yang diturunkan dari isinya, bukan nomor acak.
+Akibatnya impor kedua atas berkas yang sama **menimpa baris yang sama**, tidak
+menambah baris baru. Diuji dengan mengimpor berkas Agustus tiga kali: jumlah
+barisnya tetap 230, totalnya tidak bergerak.
+
+Kalau satu sel dibetulkan di Excel lalu berkasnya diimpor ulang, baris versi
+lamanya dibuang — bukan ditinggalkan berdampingan dengan yang baru. Yang
+dibuang hanya baris **bertanda `source: 'import'`** dan hanya di dalam rentang
+tanggal berkas itu.
+
+**Apa yang diketik lewat halaman Handler tidak pernah disentuh impor.** Berkas
+Excel berwenang atas baris yang ia bawa sendiri, bukan atas seluruh isi basis
+data. Jumlah baris yang diganti ditampilkan di tabel hasil, supaya penghapusan
+tidak pernah terjadi diam-diam.
+
+## Alur sehari-hari
+
+Dua jalan masuk, dipakai bersamaan:
+
+| | Kapan | Caranya |
+|---|---|---|
+| **Ketik** | tiap hari, sambil jalan | Handler → tab yang sesuai → isi formulir |
+| **Unggah** | tiap akhir bulan | Handler → Import Excel |
+
+Penjualan harian paling enak diketik langsung tiap tutup kasir — angkanya
+sedikit dan langsung terlihat di dasbor. Belanja, transfer, dan payroll lebih
+enak diimpor sebulan sekali dari berkas yang memang sudah Anda isi.
+
+Keduanya boleh dicampur tanpa takut bentrok: impor tidak menghapus ketikan,
+dan ketikan tidak menghalangi impor.
+
 ## Struktur
 
 ```
@@ -192,7 +225,7 @@ docs/DISKUSI.md               catatan diskusi & temuan atas berkas klien
 
 Buka **`/tests.html`** lewat server.
 
-**41 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
+**47 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
 
 Yang diuji bukan "halaman terbuka", tapi hal-hal yang membuat laporan salah
 kalau rusak:
@@ -209,6 +242,9 @@ kalau rusak:
 - serial tanggal Excel 46235 dibaca sebagai 1 Agustus 2026
 - tanggal ketikan tangan "31/08/2026" dibaca hari-dulu, bukan ditolak
 - tanggal mustahil ("31/13/2026") ditolak, bukan digeser ke bulan berikutnya
+- baris impor yang isinya sama selalu dapat nomor yang sama, jadi mengimpor
+  berkas yang sama dua kali tidak menggandakan apa pun
+- dua baris belanja yang benar-benar kembar dalam satu hari tetap dua baris
 - tiap kunci bahasa Inggris punya terjemahan Indonesianya
 
 ## Yang belum dikerjakan
