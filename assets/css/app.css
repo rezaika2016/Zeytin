@@ -496,6 +496,14 @@ table.data tfoot td {
 
 .btn--ghost:hover { background: var(--surface-2); filter: none; }
 
+.btn--danger {
+    background: var(--surface);
+    border-color: var(--negative);
+    color: var(--negative);
+}
+
+.btn--danger:hover { background: var(--negative); color: #fff; filter: none; }
+
 .btn--google {
     width: 100%;
     background: var(--surface);

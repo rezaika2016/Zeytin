@@ -261,6 +261,23 @@ function formCard(schema, host, masters, rows, editing) {
             style: 'margin-left:.5rem',
             onclick: () => renderCollection(host, schema),
         }, t('act.cancel')));
+
+        // Sama seperti tombol Hapus di baris tabel, tapi tanpa perlu scroll
+        // ke bawah lagi untuk mencari baris yang barusan dimuat ke formulir.
+        actions.push(el('button', {
+            class: 'btn btn--danger',
+            type: 'button',
+            style: 'margin-left:.5rem',
+            onclick: async () => {
+                if (!confirm(t('act.confirmDelete'))) {
+                    return;
+                }
+
+                await store.remove(schema.key, editing.id);
+                toast(t('act.deleted'), 'ok');
+                await renderCollection(host, schema);
+            },
+        }, t('act.delete')));
     }
 
     return el('div', { class: 'card', style: 'margin-bottom:1rem' }, [
