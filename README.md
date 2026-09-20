@@ -38,12 +38,41 @@ terpasang, jalan pintas itu mati dengan sendirinya.
 > Modul ES tidak bisa dimuat lewat `file://` — harus lewat server, walaupun
 > server statis sederhana.
 
+## Menyalakan GitHub Pages
+
+**Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)`.**
+
+Alamatnya nanti:
+
+```
+https://rezaika2016.github.io/Zeytin/
+```
+
+Perhatikan sub-path `/Zeytin/` — situs proyek GitHub Pages tidak disajikan
+di akar domain. Seluruh path di aplikasi ini relatif, dan peruteannya memakai
+hash (`#/reports`), jadi tidak ada yang perlu diubah. Kombinasi itu sudah
+diuji dengan menyajikan berkasnya dari sub-path yang sama.
+
+Dua berkas pendukungnya:
+
+- **`.nojekyll`** — mematikan Jekyll. Tanpa ini GitHub memproses repo sebagai
+  situs Jekyll, yang antara lain mengabaikan berkas berawalan garis bawah.
+  Situs ini tidak butuh pemrosesan apa pun; berkasnya sudah siap saji.
+- **`robots.txt`** — meminta mesin pencari tidak mengindeks. Itu permintaan,
+  bukan penjagaan; yang menjaga data tetap `firestore.rules`.
+
+> **Repo ini harus publik** supaya GitHub Pages gratis. Artinya seluruh isi
+> repo — termasuk `docs/DISKUSI.md` beserta angka di dalamnya — bisa dibaca
+> siapa saja, baik lewat github.com maupun lewat alamat Pages di atas.
+
 ## Menyiapkan Firebase
 
 1. Buat proyek di [console.firebase.google.com](https://console.firebase.google.com)
 2. **Authentication → Sign-in method → Google**: aktifkan
-3. **Authentication → Settings → Authorized domains**: tambahkan domain
-   GitHub Pages Anda
+3. **Authentication → Settings → Authorized domains**: tambahkan
+   `rezaika2016.github.io`. Tanpa ini, jendela masuk Google akan menolak
+   dengan `auth/unauthorized-domain` — dan pesannya tidak menjelaskan
+   sebabnya, jadi mudah dikira aplikasinya yang rusak.
 4. **Firestore Database**: buat, mulai dalam mode terkunci
 5. **Firestore → Rules**: tempel isi [`firestore.rules`](firestore.rules)
 6. Salin konfigurasi web ke [`assets/js/config.js`](assets/js/config.js)

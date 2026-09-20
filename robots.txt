@@ -1,0 +1,7 @@
+# Aplikasi internal, bukan halaman publik. Mesin pencari diminta tidak
+# mengindeks apa pun di sini.
+#
+# Ini permintaan, bukan penjagaan — perayap yang nakal boleh mengabaikannya.
+# Yang benar-benar menjaga datanya tetap firestore.rules.
+User-agent: *
+Disallow: /
