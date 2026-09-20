@@ -195,9 +195,10 @@ kalau rusak:
 
 ## Yang belum dikerjakan
 
-- **Firebase belum pernah dihubungkan.** Seluruh alur diuji di mode lokal,
-  termasuk di peramban sungguhan. Alur masuk Google dan penolakan oleh
-  `firestore.rules` baru bisa dibuktikan setelah proyek Firebase dibuat.
+- **Alur masuk Google belum diuji sungguhan.** Konfigurasi `zeytin-report`
+  sudah terpasang dan SDK-nya termuat — aplikasi tidak lagi jatuh ke mode
+  lokal. Jendela masuk Google dan penolakan oleh `firestore.rules` baru bisa
+  dibuktikan lewat peramban biasa, bukan peramban tanpa tampilan.
 - **Rekap bulanan belum disimpan.** Firestore ditagih per dokumen dibaca,
   jadi laporan tahunan yang menarik ribuan baris tiap kali dibuka akan mahal.
   Rencananya menyimpan rekap bulanan yang tetap bisa dihitung ulang dari

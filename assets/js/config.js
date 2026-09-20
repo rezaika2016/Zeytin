@@ -13,12 +13,12 @@
  */
 
 export const firebase = {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    storageBucket: '',
-    messagingSenderId: '',
-    appId: '',
+    apiKey: 'AIzaSyAEKLT-nzn8p0ogO4sR1X2H15GiwlMFutE',
+    authDomain: 'zeytin-report.firebaseapp.com',
+    projectId: 'zeytin-report',
+    storageBucket: 'zeytin-report.firebasestorage.app',
+    messagingSenderId: '789730265813',
+    appId: '1:789730265813:web:7ce5d044a54dc7323bf05c',
 };
 
 /**
