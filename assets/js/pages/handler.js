@@ -14,7 +14,7 @@
 import { SCHEMAS, MASTERS, MONEY_FIELDS, comboOptions, masterMatch } from '../schema.js';
 import { store } from '../store.js';
 import { t, lang } from '../i18n.js';
-import { el, money, parseMoney, today, formatDate, toast } from '../util.js';
+import { el, money, parseMoney, today, formatDate, toast, confirmDialog } from '../util.js';
 import { renderImport } from './import.js';
 
 let activeTab = 'days';
@@ -268,15 +268,7 @@ function formCard(schema, host, masters, rows, editing) {
             class: 'btn btn--danger',
             type: 'button',
             style: 'margin-left:.5rem',
-            onclick: async () => {
-                if (!confirm(t('act.confirmDelete'))) {
-                    return;
-                }
-
-                await store.remove(schema.key, editing.id);
-                toast(t('act.deleted'), 'ok');
-                await renderCollection(host, schema);
-            },
+            onclick: () => removeRow(schema, editing.id, host),
         }, t('act.delete')));
     }
 
@@ -295,6 +287,37 @@ function formCard(schema, host, masters, rows, editing) {
             el('div', { style: 'margin-top:1rem' }, actions),
         ]),
     ]);
+}
+
+/* --------------------------------------------------------------- hapus */
+
+/**
+ * Satu jalur hapus untuk tombol di formulir maupun di baris tabel.
+ *
+ * Kegagalannya dilaporkan, tidak didiamkan: penolakan aturan Firestore
+ * membuat janji `remove` ditolak, dan tanpa tangkapan ini layarnya diam saja
+ * seolah penghapusan berhasil padahal barisnya masih ada.
+ */
+async function removeRow(schema, id, host) {
+    const ok = await confirmDialog({
+        title: t('act.delete'),
+        message: t('act.confirmDelete'),
+        confirmText: t('act.delete'),
+        cancelText: t('act.cancel'),
+        danger: true,
+    });
+
+    if (!ok) {
+        return;
+    }
+
+    try {
+        await store.remove(schema.key, id);
+        toast(t('act.deleted'), 'ok');
+        await renderCollection(host, schema);
+    } catch (error) {
+        toast(error.message || String(error), 'err');
+    }
 }
 
 /* ---------------------------------------------------------------- tabel */
@@ -332,15 +355,7 @@ function listCard(schema, rows, host) {
             el('button', {
                 class: 'btn btn--ghost btn--sm',
                 type: 'button',
-                onclick: async () => {
-                    if (!confirm(t('act.confirmDelete'))) {
-                        return;
-                    }
-
-                    await store.remove(schema.key, row.id);
-                    toast(t('act.deleted'), 'ok');
-                    await renderCollection(host, schema);
-                },
+                onclick: () => removeRow(schema, row.id, host),
             }, t('act.delete')),
         ]),
     ]));

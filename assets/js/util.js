@@ -211,6 +211,56 @@ export function toast(message, kind = 'ok', title = '') {
     setTimeout(() => node.remove(), kind === 'err' ? 8000 : 4000);
 }
 
+/**
+ * Konfirmasi yang memakai gaya aplikasi, bukan kotak putih bawaan peramban.
+ *
+ * Memakai elemen <dialog> supaya perilakunya — fokus terkunci di dalam,
+ * Esc menutup, latar tidak bisa diklik — datang dari peramban, bukan ditiru
+ * dengan div dan tumpukan event yang gampang bocor.
+ *
+ * Mengembalikan janji: true kalau ditekan tombol utamanya.
+ */
+export function confirmDialog({ message, title = '', confirmText = 'OK', cancelText = 'Cancel', danger = false } = {}) {
+    return new Promise((resolve) => {
+        let answer = false;
+
+        const cancel = el('button', {
+            class: 'btn btn--ghost',
+            type: 'button',
+            onclick: () => dialog.close(),
+        }, cancelText);
+
+        const confirm = el('button', {
+            class: danger ? 'btn btn--danger' : 'btn',
+            type: 'button',
+            onclick: () => {
+                answer = true;
+                dialog.close();
+            },
+        }, confirmText);
+
+        const dialog = el('dialog', { class: 'ask' }, [
+            el('div', { class: 'ask__body' }, [
+                title ? el('h3', { text: title }) : null,
+                el('p', { text: message }),
+            ]),
+            el('div', { class: 'ask__foot' }, [cancel, confirm]),
+        ]);
+
+        // Esc menutup lewat jalur peramban, jadi jawabannya dibaca sekali di
+        // sini — bukan di tiap tombol — supaya batal dengan cara apa pun
+        // selalu menghasilkan false.
+        dialog.addEventListener('close', () => {
+            dialog.remove();
+            resolve(answer);
+        });
+
+        document.body.append(dialog);
+        dialog.showModal();
+        confirm.focus();
+    });
+}
+
 export function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }

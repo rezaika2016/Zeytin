@@ -50,9 +50,18 @@ service cloud.firestore {
       return value is int || (value is number && value == math.floor(value));
     }
 
+    /*
+     * Hapus dipisahkan dari tulis.
+     *
+     * `allow write` mencakup create, update, DAN delete — sedangkan saat
+     * menghapus tidak ada dokumen yang masuk, jadi `request.resource` bernilai
+     * null dan pemeriksaan angkanya gagal. Akibatnya baris harian tidak pernah
+     * bisa dihapus, tanpa pesan apa pun di layar.
+     */
     match /days/{date} {
       allow read: if isStaff();
-      allow write: if isStaff()
+      allow delete: if isStaff();
+      allow create, update: if isStaff()
         && isWholeNumber(request.resource.data.get('cash', 0))
         && isWholeNumber(request.resource.data.get('bni', 0));
     }
