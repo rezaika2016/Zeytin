@@ -87,23 +87,40 @@ function stat(label, value, hint = '', tone = '') {
 /* ------------------------------------------------------------ rincian */
 
 function channelCard(report) {
-    const rows = CHANNELS.map((channel) => {
-        const value = report.byChannel[channel.key] || 0;
-        const share = report.totalSales > 0 && channel.inSales
-            ? `${Math.round((value / report.totalSales) * 100)}%`
-            : '—';
+    // Hanya dua kategori: tunai dan non-tunai. Channel mana yang tunai
+    // ditandai `isCash` di config.js — bukan ditebak dari nama, supaya
+    // BNI/Grab Food/Go Food/Go Pay otomatis masuk non-tunai tanpa perlu
+    // disebut satu-satu di sini, dan channel baru ikut terklasifikasi benar.
+    const salesChannels = CHANNELS.filter((c) => c.inSales);
+    const sumOf = (predicate) => salesChannels
+        .filter(predicate)
+        .reduce((sum, c) => sum + (report.byChannel[c.key] || 0), 0);
 
-        return el('tr', {}, [
+    const cashTotal = sumOf((c) => c.isCash);
+    const nonCashTotal = sumOf((c) => !c.isCash);
+    const share = (value) => (report.totalSales > 0 ? `${Math.round((value / report.totalSales) * 100)}%` : '—');
+
+    const groupRow = (label, value) => el('tr', {}, [
+        el('td', {}, label),
+        el('td', { class: 'num', text: money(value) }),
+        el('td', { class: 'num muted', text: share(value) }),
+    ]);
+
+    const rows = [
+        groupRow(t('dash.channelCash'), cashTotal),
+        groupRow(t('dash.channelNonCash'), nonCashTotal),
+        // Bukan tunai maupun non-tunai penjualan: petty cash sengaja tidak
+        // ikut Total Sales sama sekali (lihat dayFigures), jadi ditandai
+        // terpisah supaya tidak dikira hilang dari hitungan karena salah.
+        ...CHANNELS.filter((c) => !c.inSales).map((channel) => el('tr', {}, [
             el('td', {}, [
                 channel.label,
-                // Petty cash tidak ikut Total Sales; ditandai supaya tidak
-                // dikira hilang dari hitungan karena salah.
-                channel.inSales ? null : el('span', { class: 'badge', style: 'margin-left:.5rem', text: 'excl.' }),
+                el('span', { class: 'badge', style: 'margin-left:.5rem', text: 'excl.' }),
             ]),
-            el('td', { class: 'num', text: money(value) }),
-            el('td', { class: 'num muted', text: share }),
-        ]);
-    });
+            el('td', { class: 'num', text: money(report.byChannel[channel.key] || 0) }),
+            el('td', { class: 'num muted', text: '—' }),
+        ])),
+    ];
 
     return el('div', { class: 'card' }, [
         el('div', { class: 'card__head' }, [el('h2', { text: t('dash.byChannel') })]),

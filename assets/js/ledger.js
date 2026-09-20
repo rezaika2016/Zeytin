@@ -33,6 +33,14 @@ import { eachDate, monthKey, yearKey } from './util.js';
 
 const SALES_CHANNELS = CHANNELS.filter((c) => c.inSales).map((c) => c.key);
 
+/**
+ * Channel mana pun yang ditandai `isCash` di config.js dianggap tunai;
+ * sisanya non-tunai. Dulu "tunai" berarti langsung nama kolom `cash` yang
+ * ditulis di sini, jadi menambah channel tunai baru (mis. QRIS setor tunai)
+ * berarti mengubah rumus ini juga. Sekarang cukup ditandai di config.js.
+ */
+const CASH_CHANNELS = CHANNELS.filter((c) => c.isCash).map((c) => c.key);
+
 const int = (value) => Math.round(Number(value) || 0);
 
 /* ------------------------------------------------------------ satu hari */
@@ -51,13 +59,14 @@ export function dayFigures(day = {}, spent = 0) {
     }
 
     const totalSales = SALES_CHANNELS.reduce((sum, key) => sum + channels[key], 0);
-    const supplierCash = SUPPLIER_CASH_OPENING + channels.cash;
+    const cash = CASH_CHANNELS.reduce((sum, key) => sum + channels[key], 0);
+    const supplierCash = SUPPLIER_CASH_OPENING + cash;
 
     return {
         date: day.date || '',
         ...channels,
         totalSales,
-        cashless: totalSales - channels.cash,
+        cashless: totalSales - cash,
         supplierCash,
         expense: int(spent),
         remainingSupplierCash: supplierCash - int(spent),

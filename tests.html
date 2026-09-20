@@ -133,6 +133,17 @@ check('penjualan dijumlahkan sepanjang rentang',
 check('petty cash tidak ikut total, tapi tetap tercatat per channel',
     [aug.totalSales, aug.byChannel.pettyCash], [3800000, 50000]);
 
+// Pemasukan nontunai ditentukan dari penanda `isCash` di config.js, bukan
+// dengan menyebut nama channel satu-satu di ledger.js. BNI, Grab Food, Go
+// Food, dan Go Pay harus otomatis masuk nontunai — begitu pula channel baru
+// yang ditambahkan nanti, tanpa perlu mengubah rumus ini lagi.
+check('nontunai = semua channel penjualan yang tidak ditandai isCash',
+    dayFigures({ date: '2026-08-01', cash: 1000000, bni: 200000, grabFood: 50000, goFood: 30000, goPay: 20000, pettyCash: 999999 }, 0).cashless,
+    200000 + 50000 + 30000 + 20000);
+
+check('tepat satu channel penjualan ditandai tunai',
+    CHANNELS.filter((c) => c.inSales && c.isCash).length, 1);
+
 check('belanja dikelompokkan per tanggal — tidak ada baris yang luput',
     aug.cashExpense, 500000);
 
