@@ -1,192 +1,234 @@
 # Catatan Diskusi — Aplikasi Laporan Zeytin
 
-> Status: **masih tahap diskusi.** Belum ada yang dibangun berdasarkan
-> catatan ini. Berkas ini merekam permintaan klien beserta konsekuensi
-> teknisnya, supaya keputusannya bisa diambil sebelum kode ditulis.
+> Status: **masih tahap diskusi.** Belum ada aplikasi yang dibangun.
+> Berkas ini merekam permintaan klien, konsep pelaporan yang berlaku
+> sekarang, dan temuan atas berkas Excel-nya.
 
 Terakhir diperbarui: 20 September 2026.
 
 ## Permintaan
 
 1. Di-host di **GitHub Pages**
-2. Basis data **Firebase** — Firestore atau Realtime Database, dibebaskan
+2. Basis data **Firebase** — dipilih **Firestore** (alasannya di bawah)
 3. **Login dengan Google**
 4. Tampilan bergaya Filament (sidebar kiri), **tapi bukan Filament**
-5. Halaman: **Dashboard** dan **Handler** — satu halaman handler saja untuk
-   menangani seluruh laporan
-6. Seluruh informasi di berkas Excel dipakai; itu bentuk pelaporan yang
-   sekarang berlaku
+5. Halaman: **Dashboard** dan **Handler** — satu halaman handler saja,
+   formulirnya selesai dalam satu halaman
+6. **Konsep Excel yang berlaku sekarang jangan dibuang**
 7. Tombol **export PDF** (untuk laporan ke bos) dan **download Excel**
 8. Laporan seprofesional dan sekeren mungkin — pembacanya orang luar negeri,
    **bahasa Inggris**, dengan opsi bahasa Indonesia
 9. Rentang laporan: **harian, bulanan, tahunan, dan kustom**
-10. Dashboard fokus pada ringkasan singkat: sisa saldo dan sejenisnya
+10. Dashboard: semua saldo, ditambah satu **saldo global**
 
-## Jawaban klien atas pertanyaan terbuka
+## Pengguna yang diizinkan
 
-**Pengguna: satu orang saja, tanpa peran.** Kliennya adalah stafnya sendiri.
-Dia ingin pelaporannya dipermudah, bukan sistem berlapis. Tidak ada admin
-dan operator, tidak ada hak akses per peran.
+```
+zeytin.canggu@gmail.com
+anatolia.kilic@gmail.com
+elzamcuan@gmail.com
+```
 
-**Pemasukan data: diketik *dan* diunggah.** Keduanya, bukan salah satu.
+Tanpa peran — ketiganya punya akses yang sama. Tidak ada admin dan operator,
+tidak ada pemeriksaan hak akses per halaman.
 
-**Isi halaman Handler:** formulir lengkap untuk semua laporan, selesai dalam
-satu halaman.
+> Ditulis klien sebagai `anatolia.kilic@ gmail.com` (ada spasi sebelum
+> `gmail.com`). Diasumsikan salah ketik. **Perlu dikonfirmasi** — satu huruf
+> meleset berarti orangnya tidak bisa masuk sama sekali.
 
-**Dashboard:** menampilkan semua saldo, ditambah satu **saldo global**.
+Ketiga alamat ini masuk ke Firebase Security Rules. Penolakan terjadi di
+tingkat basis data, bukan sekadar menu yang disembunyikan, sehingga akun
+Google lain tidak bisa membaca apa pun walau tahu alamat situsnya.
 
-### Apa artinya
+## Konsep Excel yang berlaku sekarang
 
-Satu pengguna tanpa peran **sangat menyederhanakan** aplikasinya:
+Diambil langsung dari rumus di dalam sel, bukan ditebak dari angkanya.
+Inilah yang harus dipertahankan aplikasinya.
 
-- Tidak perlu tabel pengguna, tidak perlu manajemen peran, tidak perlu
-  pemeriksaan hak akses di tiap halaman.
-- Firebase Security Rules-nya jadi sesederhana mungkin dan justru paling
-  aman: hanya satu alamat email yang boleh membaca dan menulis. Siapa pun
-  yang masuk dengan akun Google lain langsung ditolak di tingkat basis data,
-  bukan sekadar disembunyikan di tampilan.
-- Tidak ada jejak audit "siapa mengubah apa", karena pelakunya cuma satu.
+### Sheet Income — per hari
 
-Alamat email itu **wajib diketahui sebelum aturan keamanannya ditulis.**
-Selama belum ada, jangan masukkan data asli.
+| Kolom | Rumus asli | Artinya |
+|---|---|---|
+| I — Total Sales | `=SUM(D8:H8)` | Cash + BNI + Grab Food + Go Food + Go Pay |
+| J — Supplier Cash | `=456560+D8` | Titipan belanja = 456.560 + kas hari itu |
+| K — Expense | `=SUM(Expense!J5:J8)` | Belanja tunai hari itu |
+| L — Remaining Supplier Cash | `=J8-K8` | Sisa titipan (boleh minus) |
+| M — Grand Income | `=I8-D8` | Total penjualan dikurangi tunai = **pemasukan nontunai** |
 
-## Bagian tersulit: mengurai berkas Excel-nya
+Totalnya di baris 40: `I40 =SUM(I6:I37)` · `K40 =SUM(K6:K37)` ·
+`M40 =SUM(M6:M39)`.
 
-Karena datanya juga diunggah, pengimpornya harus sanggup membaca berkas
-seperti `ZEYTiN Daily Income & Expense Aug 2025.xlsx`. Berkas itu ditulis
-manusia untuk dibaca manusia, dan bentuknya tidak rapi:
+### Blok rekap — Income kolom O sampai R
 
-- **Tanggal hanya ditulis di baris pertama tiap kelompok.** Di sheet Expense,
-  satu tanggal menaungi beberapa baris belanja di bawahnya; baris kedua dan
-  seterusnya kolom tanggalnya kosong dan harus diwarisi dari atas.
-- **Baris header muncul lebih dari sekali.** Di sheet Outstanding INV ada dua
-  blok terpisah dengan header sendiri-sendiri (baris 1 dan baris 8), dan
-  judul kolomnya pun berbeda: satu menulis "Due Time", satunya "Deliv Date".
-- **Data tidak mulai dari baris 1.** Income mulai baris 7, Expense baris 4,
-  Supplier Database baris 9, Payroll baris 19.
-- **Payroll terbagi dua bagian** — Front Staff dan Kitchen Staff — masing-
-  masing dengan header dan baris subtotalnya sendiri.
-- **Blok rekap menyelip di samping data.** Di Income, kolom O sampai R berisi
-  ringkasan yang tidak ada hubungannya dengan baris harian di sebelah kiri.
+| Sel | Rumus asli | Nilai |
+|---|---|---|
+| O9 — Grand Income | `=I40` | 272.151.757 |
+| P9 — Grand Expense | `=SUM(Expense!J80+'Supplier Transfer Payment'!J146)-('Supplier Transfer Payment'!J94+'Supplier Transfer Payment'!J96)` | 500.000 |
+| Q9 — Payroll | `=SUM(Payroll!S40)` | 31.386.945 |
+| R9 — Profit / Gross | `=((O9-P9)-Income!$Q$9)` | 240.264.812 |
 
-Konsekuensinya: pengimpor tidak boleh menganggap "baris 1 header, sisanya
-data". Ia harus mencari baris headernya, mewarisi tanggal yang kosong, dan
+## Tiga temuan yang perlu dikonfirmasi ke klien
+
+Dilaporkan apa adanya. Saya bisa saja melewatkan konteks yang cuma klien
+tahu, jadi ini pertanyaan, bukan vonis. Tapi ketiganya memengaruhi angka
+yang dikirim ke bos, jadi tidak boleh dibawa diam-diam ke aplikasi baru.
+
+### 1. Grand Expense menunjuk satu baris belanja, bukan totalnya
+
+`Expense!J80` bukan sel total. Rumusnya `=((E80*G80)+I80-H80)` — itu
+perhitungan **satu baris belanja** (qty × harga + pajak − diskon), nilainya
+500.000.
+
+Bagian lain rumusnya juga tidak menghasilkan apa-apa:
+`'Supplier Transfer Payment'!J146` adalah `=sum(J94:J145)` atas **kolom J**,
+padahal kolom J di sheet itu berisi teks status pembayaran (`PT KEBAP PAID`,
+`ASLAN PAID`), bukan angka — hasilnya 0. `J94` dan `J96` kosong.
+
+Jadi Grand Expense = 500.000 + 0 − 0 = **500.000**, sementara total belanja
+tunai sesungguhnya **42.872.068**.
+
+### 2. Transfer ke pemasok tidak ikut dihitung sama sekali
+
+Sheet Supplier Transfer Payment, kolom H (Total Expense), berjumlah
+**157.986.252**. Angka sebesar itu tidak masuk ke Grand Expense maupun ke
+Profit / Gross.
+
+Kalau ketiga pengeluaran dijumlahkan sebagaimana mestinya:
+
+| | Dilaporkan sekarang | Kalau dihitung penuh |
+|---|---|---|
+| Grand Income | 272.151.757 | 272.151.757 |
+| Belanja tunai | 500.000 | 42.872.068 |
+| Transfer pemasok | — | 157.986.252 |
+| Payroll | 31.386.945 | 31.386.945 |
+| **Profit / Gross** | **240.264.812** | **39.906.492** |
+
+Selisihnya sekitar **200 juta**. Mungkin saja transfer pemasok memang
+sengaja tidak dihitung karena dibayar dari pos lain — tapi itu harus
+dinyatakan, bukan tersirat.
+
+### 3. Rentang harian dipilih tangan, dan ada baris yang terlewat
+
+Kolom Expense di sheet Income menunjuk rentang baris yang diketik manual:
+`Expense!J5:J8`, lalu `J9:J12`, lalu `J13:J20`, dan seterusnya. Menyisipkan
+satu baris belanja baru tidak otomatis masuk hitungan hari itu.
+
+Akibatnya sudah terjadi: jumlah seluruh kolom J di sheet Expense adalah
+**42.872.068**, sedangkan `Income!K40` yang dipakai laporan menghasilkan
+**42.654.578**. **217.490 tidak terhitung** karena jatuh di luar semua
+rentang.
+
+Di aplikasi nanti hal ini hilang dengan sendirinya: pengeluaran
+dikelompokkan berdasarkan tanggalnya, bukan berdasarkan nomor baris.
+
+### Catatan tambahan
+
+- **Petty cash (kolom C) tidak ikut Total Sales.** `SUM(D:H)` dimulai dari
+  D, melewati C. Disengaja atau tidak, perlu ditanyakan.
+- **456.560 diketik langsung di tiap baris** Supplier Cash. Angka ini
+  kelihatannya saldo awal titipan, tapi tidak ada keterangannya di mana pun.
+- **82.044.731 dari transfer pemasok tidak punya status pembayaran** —
+  lebih dari separuhnya. Artinya untuk sebagian besar transaksi tidak
+  tercatat siapa yang menalangi.
+
+## Saldo di Dashboard
+
+Klien minta "semuanya, dan ada saldo global juga", dengan konsep Excel
+dipertahankan. Jadi yang ditampilkan mengikuti kolom yang sudah ada:
+
+| Saldo | Asal di Excel |
+|---|---|
+| Kas per channel | Petty cash · Cash · BNI · Grab Food · Go Food · Go Pay |
+| Total Sales | `SUM(D:H)` per hari |
+| Grand Income (nontunai) | `Total Sales − Cash` |
+| Supplier Cash | `456.560 + Cash` |
+| Remaining Supplier Cash | `Supplier Cash − Expense` |
+| Outstanding | Tagihan pemasok yang belum dibayar |
+
+**Saldo global belum bisa ditetapkan** sampai temuan nomor 1 dan 2 di atas
+dijawab — rumus Profit / Gross yang ada sekarang tidak bisa dipakai apa
+adanya. Yang penting bukan rumusnya, melainkan bahwa rumusnya **tertulis dan
+sama persis** antara dashboard, laporan PDF, dan unduhan Excel. Kalau
+definisinya berbeda antar tempat, yang rusak kepercayaannya, bukan sekadar
+angkanya.
+
+## Keputusan teknis
+
+### Firestore, bukan Realtime Database
+
+- **Kueri rentang tanggal.** Seluruh laporan berbentuk "ambil baris antara
+  tanggal A dan B". Firestore menanganinya lewat indeks; Realtime Database
+  hanya punya satu kunci urut per kueri, sehingga penyaringannya jatuh ke
+  peramban setelah menarik data berlebih.
+- **Bentuk datanya cocok.** Tiap baris Excel jadi satu dokumen dengan bidang
+  bernama — dekat dengan bentuk aslinya, mudah ditelusuri di konsol.
+- **Aturan keamanannya lebih ekspresif**, dan itu lapisan yang paling
+  menentukan di sini.
+
+Realtime Database unggul untuk sinkronisasi cepat antar banyak klien.
+Tidak ada kebutuhan seperti itu di sini.
+
+Konsekuensi biaya: Firestore ditagih per dokumen dibaca. Laporan tahunan
+yang menarik ribuan baris tiap kali dibuka bisa mahal, jadi rekap bulanan
+sebaiknya ikut disimpan — dan harus bisa dihitung ulang dari dokumen
+aslinya kalau sewaktu-waktu diragukan.
+
+### Laravel dibuang
+
+GitHub Pages hanya menyajikan berkas statis: tidak ada PHP, tidak ada MySQL.
+Klien sudah menyetujui — fondasi Laravel + Filament dihapus dari repo ini.
+Riwayatnya tetap ada di commit `b5075de` kalau suatu saat diperlukan.
+
+Bentuk barunya: HTML + CSS + JavaScript biasa, tanpa Node/npm, pustaka dari
+CDN. Sejalan dengan proyek-proyek sebelumnya.
+
+### Keamanan
+
+Di aplikasi statis, seluruh kode dan konfigurasi Firebase **terbaca siapa
+saja** yang membuka situsnya. Itu cara kerja Firebase, bukan kesalahan
+konfigurasi. Yang menjaga datanya hanya Security Rules dan daftar email di
+atas.
+
+Berkas sumber Excel memuat nomor rekening ±400 pemasok, nomor HP, dan gaji
+tiap karyawan. `.gitignore` mengunci `*.xlsx`, `*.xls`, `*.csv` supaya tidak
+pernah ikut ter-commit ke repo publik ini. Datanya tinggal di Firestore.
+
+## Bagian tersulit: mengurai berkas Excel yang diunggah
+
+Karena datanya juga diunggah, pengimpornya harus membaca berkas seperti
+`ZEYTiN Daily Income & Expense Aug 2025.xlsx`. Berkas itu ditulis manusia
+untuk dibaca manusia:
+
+- **Tanggal hanya di baris pertama tiap kelompok.** Di sheet Expense, satu
+  tanggal menaungi beberapa baris belanja; baris berikutnya kosong dan harus
+  mewarisi dari atas.
+- **Header muncul lebih dari sekali.** Outstanding INV punya dua blok dengan
+  header sendiri (baris 1 dan 8), dan judulnya berbeda: "Due Time" vs
+  "Deliv Date".
+- **Tiap sheet mulai di baris berlainan:** Income 7, Expense 4,
+  Supplier Database 9, Payroll 19.
+- **Payroll terbagi dua** — Front Staff dan Kitchen Staff — masing-masing
+  dengan header dan subtotal sendiri.
+- **Blok rekap menyelip di samping data** (Income kolom O–R).
+
+Pengimpor harus mencari baris headernya, mewarisi tanggal yang kosong, dan
 **menolak dengan jelas** kalau bentuk berkasnya berubah — bukan diam-diam
 memasukkan angka ke kolom yang salah. Galat diam di pengimpor adalah cara
 tercepat merusak laporan tanpa ada yang sadar.
 
-## Saldo yang ditampilkan di Dashboard
+## Rencana teknis
 
-Klien meminta "semuanya, dan ada saldo global juga". Dari berkas Excel, yang
-tersedia:
+- **Hosting:** GitHub Pages. Perlu diputuskan menyajikan dari cabang
+  `gh-pages` atau folder `/docs` di `main`. Catatan ini ada di `/docs`, jadi
+  kalau `/docs` yang dipilih, berkas ini harus dipindah dulu supaya tidak
+  ikut terbit.
+- **Export PDF:** jsPDF + autoTable (CDN).
+- **Export & impor Excel:** SheetJS (CDN).
+- **Dua bahasa:** berkas kamus sederhana, Inggris sebagai bawaan.
 
-| Saldo | Asal |
-|---|---|
-| Kas per channel | Petty cash · Cash · BNI · Grab Food · Go Food · Go Pay |
-| Remaining Supplier Cash | Titipan tunai belanja pemasok, bisa minus |
-| Grand Income | Total pemasukan |
-| Outstanding | Tagihan pemasok yang belum dibayar |
+## Yang masih ditunggu
 
-**Usulan rumus saldo global** — perlu dikonfirmasi ke klien sebelum dipakai:
-
-```
-Saldo global = seluruh kas & bank
-             + sisa titipan belanja pemasok
-             − tagihan yang belum dibayar
-```
-
-Yang penting bukan rumusnya, melainkan bahwa rumusnya **tertulis dan sama di
-seluruh aplikasi**. Angka ini yang akan dilihat bos, dan kalau definisinya
-berbeda antara dashboard dan laporan PDF, yang rusak kepercayaannya, bukan
-sekadar angkanya.
-
-## Benturan yang harus diputuskan
-
-### GitHub Pages tidak bisa menjalankan Laravel
-
-GitHub Pages hanya menyajikan berkas statis — HTML, CSS, JavaScript, gambar.
-Tidak ada PHP di sana, tidak ada MySQL, tidak ada Laravel.
-
-Artinya fondasi Laravel + Filament yang sudah terlanjur di-commit ke repo ini
-**tidak bisa dipakai** untuk arah yang baru:
-
-| | Rencana lama | Arah baru |
-|---|---|---|
-| Hosting | Shared hosting / XAMPP | GitHub Pages (statis) |
-| Bahasa | PHP (Laravel 12) | JavaScript di peramban |
-| Basis data | MySQL | Firebase Firestore |
-| Tampilan | Filament 5 | Buatan sendiri, bergaya Filament |
-| Login | Filament auth | Google Sign-In (Firebase Auth) |
-
-**Saran: hapus fondasi Laravel-nya** dan mulai sebagai aplikasi statis.
-Belum ada yang dihapus — menunggu persetujuan.
-
-### Keamanan data
-
-Berkas sumbernya memuat nomor rekening dan nama pemilik rekening sekitar 400
-pemasok, nomor HP narahubung, dan gaji tiap karyawan. Di aplikasi statis,
-seluruh kode dan konfigurasi Firebase **terbaca siapa saja** yang membuka
-situsnya — itu memang cara kerja Firebase, bukan kesalahan konfigurasi.
-
-Yang menjaga datanya hanya dua lapis:
-
-1. **Firebase Security Rules** yang membatasi baca/tulis ke satu email yang
-   diizinkan. Tanpa ini, siapa pun yang tahu alamat situsnya bisa membaca
-   seluruh data keuangan.
-2. **Pembatasan siapa yang boleh masuk.** Login Google saja tidak cukup —
-   siapa pun punya akun Google.
-
-Repo ini sendiri publik, tapi datanya tinggal di Firebase, bukan di repo.
-Itu tidak jadi masalah asalkan aturannya benar. Berkas `*.xlsx`, `*.xls`,
-dan `*.csv` dikunci di `.gitignore` supaya berkas sumbernya tidak pernah
-ikut ter-commit.
-
-## Keputusan teknis: Firestore, bukan Realtime Database
-
-- **Kueri rentang tanggal.** Laporan harian, bulanan, tahunan, dan kustom
-  semuanya berarti "ambil baris antara tanggal A dan B". Firestore
-  menanganinya lewat indeks; Realtime Database hanya punya satu kunci urut
-  per kueri, sehingga penyaringan gabungan terpaksa dikerjakan di peramban
-  setelah menarik lebih banyak data dari yang dibutuhkan.
-- **Bentuk datanya cocok.** Tiap baris Excel jadi satu dokumen dengan bidang
-  bernama — dekat dengan bentuk aslinya, mudah ditelusuri di konsol Firebase.
-- **Aturan keamanannya lebih ekspresif**, dan itu justru lapisan yang paling
-  menentukan di sini.
-
-Realtime Database unggul untuk sinkronisasi cepat antar banyak klien —
-obrolan, status daring, kolaborasi langsung. Tidak ada kebutuhan seperti itu
-di aplikasi ini, apalagi penggunanya cuma satu orang.
-
-Konsekuensi biaya: Firestore ditagih per dokumen yang dibaca. Laporan tahunan
-yang menarik ribuan baris tiap kali dibuka bisa mahal, jadi rekap bulanan
-sebaiknya ikut disimpan. Ini satu-satunya tempat di proyek ini yang
-menyimpang dari prinsip "tidak ada tabel saldo" — alasannya biaya, bukan
-kemudahan, dan rekapnya harus bisa dihitung ulang dari dokumen aslinya kalau
-sewaktu-waktu diragukan.
-
-## Yang masih perlu dijelaskan
-
-1. **Alamat email Google** yang boleh masuk. Wajib ada sebelum aturan
-   keamanan ditulis dan sebelum data asli dimasukkan.
-2. **Konfirmasi rumus saldo global** di atas.
-3. **Kejanggalan di berkas aslinya** — dua hal ini perlu ditanyakan ke klien,
-   bukan dibetulkan diam-diam:
-   - Rekap atas dan bawah tidak cocok: blok ringkasan `O8:R9` menulis Grand
-     Expense **500.000**, sedangkan baris total `K40` menulis Expense
-     **42.654.578**.
-   - Tanggalnya Agustus 2026, bukan 2025. Serial Excel 46235–46265 =
-     1–31 Agustus 2026, padahal nama berkasnya "Aug 2025" dan sheet Payroll
-     menulis "1st – 31th September 2025".
-
-## Catatan teknis untuk nanti
-
-- Tanpa Node/npm, sejalan dengan proyek-proyek sebelumnya: JavaScript biasa
-  plus pustaka dari CDN.
-- Export PDF: jsPDF + autoTable. Export Excel dan **pengurai berkas unggahan**:
-  SheetJS. Ketiganya berjalan di peramban, tidak perlu server.
-- Dua bahasa (Inggris bawaan, Indonesia opsional) ditangani berkas kamus
-  sederhana, pola yang sama seperti proyek kasir Kebap.
-- GitHub Pages menyajikan dari cabang `gh-pages` atau folder `/docs` di
-  `main`. Berkas ini ada di `/docs`, jadi kalau `/docs` yang dipilih sebagai
-  akar situs, catatan ini perlu dipindah lebih dulu supaya tidak ikut
-  terbit ke publik.
+1. Konfirmasi ejaan `anatolia.kilic@gmail.com`.
+2. Jawaban atas tiga temuan di atas — terutama apakah transfer pemasok
+   memang sengaja tidak masuk hitungan laba.
+3. Setelah itu baru saldo global bisa ditetapkan rumusnya.
