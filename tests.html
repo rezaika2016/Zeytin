@@ -148,9 +148,22 @@ check('laba bersih = penjualan - (belanja + transfer + gaji)',
 check('tagihan yang sudah lunas tidak dihitung sebagai utang',
     aug.outstanding, 750000);
 
-check('saldo global = laba + sisa titipan - tagihan belum dibayar',
-    aug.globalBalance,
-    aug.netProfit + aug.remainingSupplierCash - aug.outstanding);
+check('saldo global = laba - tagihan belum dibayar',
+    aug.globalBalance, aug.netProfit - aug.outstanding);
+
+// Sisa titipan berisi `456.560 + tunai`, jadi menambahkannya ke saldo global
+// membuat uang tunai terhitung dua kali: pemasukan tunai 5 juta pernah muncul
+// sebagai saldo 10,4 juta di layar klien.
+const tunaiSaja = periodReport({
+    days: [{ date: '2026-08-01', cash: 5000000 }],
+    expenses: [], transfers: [], payroll: [], outstanding: [],
+}, '2026-08-01', '2026-08-01');
+
+check('uang tunai tidak dihitung dua kali di saldo global',
+    [tunaiSaja.totalSales, tunaiSaja.globalBalance], [5000000, 5000000]);
+
+check('sisa titipan tetap ditampilkan terpisah, tidak ikut saldo global',
+    tunaiSaja.remainingSupplierCash, SUPPLIER_CASH_OPENING + 5000000);
 
 check('sisa titipan adalah keadaan hari terakhir, bukan jumlah antar hari',
     aug.remainingSupplierCash,

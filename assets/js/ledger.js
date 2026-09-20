@@ -130,16 +130,27 @@ export function periodReport(data, from, to) {
          * Saldo global.
          *
          * Uang yang benar-benar dipegang usaha: seluruh pemasukan dikurangi
-         * yang sudah dibayarkan, ditambah sisa titipan belanja pemasok,
-         * dikurangi tagihan yang sudah jatuh tapi belum dibayar.
+         * yang sudah dibayarkan, dikurangi tagihan yang sudah jatuh tapi
+         * belum dibayar.
+         *
+         * Sisa titipan belanja pemasok SENGAJA tidak ikut ditambahkan.
+         * Rumusnya `456.560 + tunai − belanja`, jadi uang tunai di dalamnya
+         * sudah terhitung di Total Sales; menambahkannya membuat tunai
+         * dihitung dua kali — pemasukan tunai 5 juta muncul sebagai saldo
+         * 10,4 juta. Angkanya tetap tampil sebagai kartu tersendiri di
+         * dasbor, jadi tidak ada yang hilang dari layar.
+         *
+         * Cacat kedua yang ikut hilang: `totals.remainingSupplierCash` berisi
+         * keadaan satu hari terakhir yang tercatat, sedangkan sisanya jumlah
+         * seluruh periode. Mencampur angka sehari dengan total sebulan tidak
+         * menghasilkan angka yang bisa dibaca.
          *
          * Rumus ini dipakai di dasbor, laporan PDF, dan unduhan Excel —
          * satu definisi, satu tempat. Kalau angka yang sama dihitung
          * berbeda di tiga tempat, yang rusak kepercayaannya, bukan sekadar
          * angkanya.
          */
-        globalBalance: totals.totalSales - totalExpenses
-            + totals.remainingSupplierCash - outstanding,
+        globalBalance: totals.totalSales - totalExpenses - outstanding,
     };
 }
 
