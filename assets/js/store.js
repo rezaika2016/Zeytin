@@ -32,6 +32,12 @@ export const COLLECTIONS = {
     payroll: 'month',
     outstanding: 'date',
     suppliers: null,
+
+    // Dua koleksi induk: tidak punya tanggal, dibaca seluruhnya, dan dipakai
+    // untuk mengisi formulir lain. Jumlah barisnya puluhan, bukan ribuan,
+    // jadi menarik semuanya tidak jadi beban.
+    products: null,
+    methods: null,
 };
 
 const LOCAL_PREFIX = 'zeytin.data.';

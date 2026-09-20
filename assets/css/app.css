@@ -508,6 +508,11 @@ table.data tfoot td {
 
 .btn--sm { padding: .3125rem .625rem; font-size: .8125rem; }
 
+/* Dua tombol per baris tabel. Tidak dibungkus, supaya Ubah dan Hapus tidak
+   pernah bertukar tempat saat kolomnya menyempit — salah tekan di sini
+   berarti baris terhapus. */
+.row-actions { display: flex; gap: .25rem; flex-wrap: nowrap; justify-content: flex-end; }
+
 .chip {
     padding: .3125rem .75rem;
     border: 1px solid var(--border);

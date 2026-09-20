@@ -30,6 +30,8 @@ import { parseMoney, excelSerialToDate, eachDate, dateKey, money } from './asset
 import { SUPPLIER_CASH_OPENING, CHANNELS, ALLOWED_EMAILS } from './assets/js/config.js';
 import { DICTIONARIES } from './assets/js/i18n.js';
 import { toDate, stableId } from './assets/js/pages/import.js';
+import { SCHEMAS, comboOptions, masterMatch } from './assets/js/schema.js';
+import { COLLECTIONS } from './assets/js/store.js';
 
 const out = document.getElementById('out');
 let pass = 0;
@@ -279,6 +281,50 @@ const emailsInRules = [...rulesText.matchAll(/'([^'\s]+@[^'\s]+)'/g)].map((m) =>
 
 check('daftar email di firestore.rules sama persis dengan config.js',
     emailsInRules, [...ALLOWED_EMAILS].sort());
+
+/* ------------------------------------------------- data induk & saran */
+
+const COMBO = { name: 'item', source: 'products', fills: { unit: 'unit', price: 'price' } };
+const MASTER_ROWS = {
+    products: [
+        { name: 'Yoghurt 5kg', unit: 'pack', price: 85000 },
+        { name: 'Bulgur sack', unit: 'sack', price: 320000 },
+    ],
+};
+
+check('saran menggabungkan data induk dengan yang sudah pernah dipakai',
+    comboOptions(COMBO, MASTER_ROWS, [{ item: 'Tomato crate' }, { item: 'yoghurt 5kg' }]),
+    ['Bulgur sack', 'Tomato crate', 'Yoghurt 5kg']);
+
+check('nilai kosong tidak ikut jadi saran',
+    comboOptions(COMBO, {}, [{ item: '' }, { item: null }, { item: '  ' }]), []);
+
+check('induk dicocokkan tanpa memandang huruf besar-kecil dan spasi',
+    masterMatch(COMBO, MASTER_ROWS, '  yoghurt 5KG ').price, 85000);
+
+check('yang tidak terdaftar tidak dicocokkan dengan yang sekadar mirip',
+    masterMatch(COMBO, MASTER_ROWS, 'Yoghurt'), null);
+
+// Tiga uji berikut menjaga sambungan antarberkas. Salah satunya putus tidak
+// memunculkan galat apa pun — kotak sarannya cuma diam-diam kosong, atau
+// simpanannya ditolak Firestore tanpa sebab yang jelas.
+
+check('tiap kotak saran menunjuk koleksi induk yang benar-benar ada',
+    Object.values(SCHEMAS).flatMap((s) => s.fields)
+        .filter((f) => f.type === 'combo' && !(SCHEMAS[f.source] || {}).master)
+        .map((f) => String(f.source)), []);
+
+check('kolom yang diisi otomatis benar-benar ada di formulirnya',
+    Object.values(SCHEMAS).flatMap((s) => s.fields
+        .flatMap((f) => Object.keys(f.fills || {})
+            .filter((target) => !s.fields.some((other) => other.name === target))
+            .map((target) => `${s.key}.${target}`))), []);
+
+check('tiap koleksi di skema dikenal oleh store',
+    Object.keys(SCHEMAS).filter((key) => !(key in COLLECTIONS)), []);
+
+check('tiap koleksi punya aturan Firestore-nya sendiri',
+    Object.keys(COLLECTIONS).filter((name) => !rulesText.includes(`match /${name}/`)), []);
 
 /* ------------------------------------------------------------ ringkasan */
 

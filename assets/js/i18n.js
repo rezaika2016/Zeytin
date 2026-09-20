@@ -57,6 +57,8 @@ const DICT = {
         'tab.payroll': 'Payroll',
         'tab.suppliers': 'Suppliers',
         'tab.outstanding': 'Outstanding',
+        'tab.products': 'Products',
+        'tab.methods': 'Payment methods',
         'tab.import': 'Import Excel',
 
         'f.date': 'Date',
@@ -90,6 +92,11 @@ const DICT = {
         'act.confirmDelete': 'Delete this entry?',
         'act.saved': 'Saved',
         'act.deleted': 'Deleted',
+        'act.edit': 'Edit',
+        'act.update': 'Save changes',
+        'act.updated': 'Changes saved',
+        'form.editing': 'Editing an existing row',
+        'master.empty': 'Nothing here yet. Add the ones you use most — the daily forms will suggest them.',
 
         'import.intro': 'Upload the monthly workbook. Each sheet is read separately, and anything that does not match the expected shape is reported instead of guessed.',
         'import.pick': 'Choose .xlsx file',
@@ -183,6 +190,8 @@ const DICT = {
         'tab.payroll': 'Gaji',
         'tab.suppliers': 'Pemasok',
         'tab.outstanding': 'Tagihan',
+        'tab.products': 'Barang',
+        'tab.methods': 'Cara bayar',
         'tab.import': 'Impor Excel',
 
         'f.date': 'Tanggal',
@@ -216,6 +225,11 @@ const DICT = {
         'act.confirmDelete': 'Hapus catatan ini?',
         'act.saved': 'Tersimpan',
         'act.deleted': 'Terhapus',
+        'act.edit': 'Ubah',
+        'act.update': 'Simpan perubahan',
+        'act.updated': 'Perubahan tersimpan',
+        'form.editing': 'Sedang mengubah baris yang ada',
+        'master.empty': 'Masih kosong. Isi yang paling sering dipakai — formulir hariannya nanti menyarankan ini.',
 
         'import.intro': 'Unggah berkas bulanan. Tiap sheet dibaca terpisah, dan apa pun yang bentuknya tidak sesuai dilaporkan, bukan ditebak.',
         'import.pick': 'Pilih berkas .xlsx',

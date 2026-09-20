@@ -121,7 +121,24 @@ export async function seedDemo() {
         method: i % 2 ? 'Transfer' : 'COD',
     }));
 
+    const products = ITEMS.map((name, i) => ({
+        id: uid(),
+        name,
+        unit: i % 2 ? 'kg' : 'pack',
+        price: 25000 + i * 40000,
+        vendor: VENDORS[i % VENDORS.length],
+        note: '',
+    }));
+
+    const methods = [
+        { id: uid(), name: 'Transfer', note: '' },
+        { id: uid(), name: 'COD', note: '' },
+        { id: uid(), name: 'Cash', note: '' },
+    ];
+
     await Promise.all([
+        store.putMany('products', products),
+        store.putMany('methods', methods),
         store.putMany('days', days),
         store.putMany('expenses', expenses),
         store.putMany('transfers', transfers),

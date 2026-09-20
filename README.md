@@ -201,6 +201,48 @@ enak diimpor sebulan sekali dari berkas yang memang sudah Anda isi.
 Keduanya boleh dicampur tanpa takut bentrok: impor tidak menghapus ketikan,
 dan ketikan tidak menghalangi impor.
 
+### Data induk — supaya formulirnya cepat diisi
+
+Tiga tab terakhir sebelum Import berisi data yang jarang berubah, tapi
+dipakai terus:
+
+| Tab | Isinya |
+|---|---|
+| **Pemasok** | nama, narahubung, bank, nomor rekening, cara bayar |
+| **Barang** | nama barang, satuan, harga terakhir, pemasok langganannya |
+| **Cara bayar** | Transfer, COD, Cash, atau apa pun yang Anda pakai |
+
+Di formulir harian, kotak **Barang** dan **Pemasok** punya daftar saran.
+Memilih satu barang ikut mengisi **satuan** dan **harganya**; memilih pemasok
+di tab Transfer ikut mengisi **cara bayarnya**. Isian sepuluh kolom jadi tiga
+ketikan.
+
+Tiga hal yang sengaja dibuat begitu:
+
+- **Kotaknya tetap bisa diketik bebas.** Nama barang di berkas klien tidak
+  rapi ("Bayar gojek (Tepung)"), dan daftar tertutup hanya akan membuat orang
+  berhenti mencatat.
+- **Harga yang sudah Anda ketik tidak pernah tertimpa.** Ganti barang lain,
+  harganya ikut berubah — tapi begitu Anda ketik angka sendiri, angka itu
+  bertahan. Harga pemasok berubah terus; formulir yang memaksakan harga lama
+  membuat catatan salah dengan rapi.
+- **Sarannya tidak cuma dari data induk**, tapi juga dari yang sudah pernah
+  dipakai di tab itu. Data hasil impor Excel tidak lewat halaman induk, jadi
+  tanpa ini kotak sarannya justru kosong di bulan-bulan pertama.
+
+### Mengubah baris yang sudah ada
+
+Tiap baris di tabel punya tombol **Ubah** di sebelah Hapus. Menekannya
+memuat baris itu ke formulir di atasnya; tombol simpannya berganti jadi
+"Simpan perubahan", dan ada tombol Batal di sebelahnya.
+
+Baris yang pernah diubah di sini ditandai sebagai ketikan orang, jadi impor
+Excel berikutnya tidak akan menimpanya — Anda yang terakhir menyentuhnya.
+
+Mengubah tanggal pada Pemasukan harian berarti **memindahkan** barisnya,
+karena tanggalnya sekaligus jadi nomor barisnya. Baris lamanya dibuang, jadi
+harinya tidak terhitung dua kali.
+
 ## Struktur
 
 ```
@@ -226,7 +268,7 @@ docs/DISKUSI.md               catatan diskusi & temuan atas berkas klien
 
 Buka **`/tests.html`** lewat server.
 
-**48 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
+**56 uji, semuanya lolos** (diverifikasi 20 September 2026 di Chrome).
 
 Yang diuji bukan "halaman terbuka", tapi hal-hal yang membuat laporan salah
 kalau rusak:
@@ -248,6 +290,9 @@ kalau rusak:
 - dua baris belanja yang benar-benar kembar dalam satu hari tetap dua baris
 - tiap kunci bahasa Inggris punya terjemahan Indonesianya
 - daftar email di `firestore.rules` sama persis dengan yang di `config.js`
+- tiap koleksi punya aturan Firestore-nya sendiri, dan dikenal oleh store
+- tiap kotak saran menunjuk koleksi induk yang benar-benar ada
+- kolom yang diisi otomatis benar-benar ada di formulirnya
 
 ## Yang belum dikerjakan
 
