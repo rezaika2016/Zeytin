@@ -9,7 +9,7 @@
 
 const DICT = {
     en: {
-        'app.tagline': 'Turkish Kitchen · Canggu, Bali',
+        'app.tagline': 'Jln. Persada No. 8 Banjar Pengipian',
         'app.subtitle': 'Financial Reporting',
 
         'signin.eyebrow': 'Financial Reporting',
@@ -157,7 +157,7 @@ const DICT = {
     },
 
     id: {
-        'app.tagline': 'Dapur Turki · Canggu, Bali',
+        'app.tagline': 'Jln. Persada No. 8 Banjar Pengipian',
         'app.subtitle': 'Laporan Keuangan',
 
         'signin.eyebrow': 'Laporan Keuangan',

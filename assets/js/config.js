@@ -39,7 +39,7 @@ export const ALLOWED_EMAILS = [
 export const business = {
     name: 'Warung Mbak Unyil',
     legalName: 'PT. Kebap and Meze House',
-    address: 'Koloni Bali, Jl. Raya Semat No.1, Canggu, Badung, Bali 80361',
+    address: 'Jln. Persada No. 8 Banjar Pengipian',
     currency: 'IDR',
     locale: 'id-ID',
     timeZone: 'Asia/Makassar',
