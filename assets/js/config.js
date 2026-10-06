@@ -37,7 +37,7 @@ export const ALLOWED_EMAILS = [
 ];
 
 export const business = {
-    name: 'ZEYTiN',
+    name: 'Warung Mbak Unyil',
     legalName: 'PT. Kebap and Meze House',
     address: 'Koloni Bali, Jl. Raya Semat No.1, Canggu, Badung, Bali 80361',
     currency: 'IDR',
